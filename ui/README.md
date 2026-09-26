@@ -11,6 +11,17 @@ you need into your repo's own `src/components/`.
 
 ## What's here
 
+- `button.tsx` — the shadcn `Button` (all variants/sizes), including the
+  one deliberate hand-patch on top of the generated shadcn output: the
+  `outline` variant's `disabled:bg-background/40 disabled:backdrop-blur-md`
+  treatment. Every other component here that renders a button imports this
+  file (`./button`), not a consuming repo's own copy.
+- `input.tsx` — the shadcn `Input` (text input).
+- `select.tsx` — the shadcn `Select` family (`Select`, `SelectTrigger`,
+  `SelectContent`, `SelectItem`, `SelectValue`).
+- `settings-primitives.tsx` — `SettingsSection`/`SettingsRow`: a titled
+  section + labeled-row pattern for any settings-style list, not just app
+  settings.
 - `drawer.tsx` — the Base UI `Drawer` wrapper with swipe-to-dismiss and
   `useHistoryBackDismiss` (closes on the phone's native back gesture on iOS
   and any browser without `CloseWatcher`). Carries forward a real bug fix:
@@ -39,12 +50,15 @@ props instead — the caller passes its own translated string.
 
 ## Dependencies a consuming repo needs
 
-- `@base-ui/react` (`drawer.tsx`), `@dnd-kit/sortable` (`drag-handle.tsx`,
-  type-only), `lucide-react` (icons), `cn` re-exported from your own
-  `@/lib/utils` per the [aliases convention](../configs/README.md), and a
-  shadcn `Button` at `@/components/ui/button` (same `base-nova`/Tailwind v4
-  token setup as routines — see [#7](https://github.com/maat-apps/maat-core/issues/7)
-  for the scaffolding side of that).
+- `@base-ui/react` (`drawer.tsx`, `button.tsx`, `input.tsx`, `select.tsx`),
+  `@dnd-kit/sortable` (`drag-handle.tsx`, type-only), `class-variance-authority`
+  (`button.tsx`'s variants), `lucide-react` (icons), and `cn` re-exported
+  from your own `@/lib/utils` per the
+  [aliases convention](../configs/README.md).
+- Same `base-nova`/Tailwind v4 token setup as routines (design tokens
+  themselves aren't included — see below) — see
+  [#7](https://github.com/maat-apps/maat-core/issues/7) for the scaffolding
+  side of that.
 - `progress-ring.tsx` assumes an `animate-progress-check-pop` Tailwind
   animation exists in your `globals.css` (routines defines it there) — copy
   that keyframe along with the component, or drop the class if you don't
