@@ -1,7 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import { type ReactNode } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "./button";
 import { PageHeader } from "./page-header";
 
 // Adapted from routines' app-bar.tsx: takes `backLabel` as a prop instead
