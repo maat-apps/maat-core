@@ -10,4 +10,7 @@ extracting out of a single app repo — tracked as
 [Issues](https://github.com/maat-apps/maat-core/issues) even before the code
 behind them exists here.
 
-See individual directories' own docs for what's here so far.
+## What's here
+
+- [`configs/`](./configs) — shared ESLint, Prettier, and base TypeScript
+  config, extracted from `routines`. See its own README for how to use them.
