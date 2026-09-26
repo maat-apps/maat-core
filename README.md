@@ -23,13 +23,12 @@ behind them exists here.
 `packages/*` is an npm workspaces monorepo publishing scoped
 `@maat-apps/*` packages to the public npm registry — the eventual home
 for real, installable versions of what's copy-pasted from `configs/`/`ui/`
-today. See [`.github/workflows/publish.yml`](./.github/workflows/publish.yml)
-(manual `workflow_dispatch`, one package per run) and
-[maat-apps/maat-core#18](https://github.com/maat-apps/maat-core/issues/18)
-for the full plan.
-
-**Not yet usable**: publishing needs the `@maat-apps` npm scope claimed and
-an `NPM_TOKEN` repo secret first — see
-[maat-apps/maat-core#22](https://github.com/maat-apps/maat-core/issues/22).
-`packages/placeholder` exists only to prove the publish/consume loop once
-that's done, before any real content depends on it.
+today. Publishing is CI-driven via
+[`.github/workflows/publish.yml`](./.github/workflows/publish.yml)
+(`workflow_dispatch`, one package per run), authenticated with npm Trusted
+Publishing (OIDC) — no stored token. Each publish stages a version; a
+maintainer with 2FA enabled promotes it live at npmjs.com (Access Tokens →
+Staged Packages) — a deliberate per-release human checkpoint, not an
+oversight. `packages/placeholder` proved the loop end-to-end (staged →
+promoted → `npm install`d → resolved correctly); real content moving from
+`configs/`/`ui/` into actual published packages is still todo.
