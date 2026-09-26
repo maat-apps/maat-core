@@ -16,6 +16,9 @@ behind them exists here.
   every `maat-apps` app starts from (folder structure, routing, i18n,
   testing) — link to it from an app's own `CLAUDE.md` instead of
   re-documenting the generic pattern there.
+- [`VERIFICATION.md`](./VERIFICATION.md) — the "verify each change exactly
+  once" principle: eliminating redundant lint/test/build runs across
+  local and CI is a bigger win than optimizing any single run.
 - [`configs/`](./configs) — shared ESLint, Prettier, and base TypeScript
   config, extracted from `routines`. See its own README for how to use them.
 - [`ui/`](./ui) — hand-built UI components extracted from `routines`
