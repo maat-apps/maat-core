@@ -41,12 +41,21 @@ you need into your repo's own `src/components/`.
 - `progress-ring.tsx` — a compact circular completed/total indicator.
 - `fab-button.tsx` / `reset-button.tsx` — floating action button and a
   secondary action button, sharing one sizing/shape convention.
+- `mobile-gate.tsx` — renders `children` for phone-sized viewports, a
+  message otherwise.
+- `empty-state.tsx` — a centered "nothing here" message with an optional
+  call-to-action button; generalized from three routines-specific
+  components (`EmptyState`, `NoRoutinesToday`, `EmptySteps`) that all
+  shared this exact shape.
 
-`confirm-drawer.tsx` and `app-bar.tsx` differ from routines' originals in
-one way: routines' versions call its own `useTranslation()` hook directly
-for "Cancel"/"Back" labels, which a shared component can't do (no app's
-i18n module is shared yet). Here they take `cancelLabel`/`backLabel` as
-props instead — the caller passes its own translated string.
+`confirm-drawer.tsx`, `app-bar.tsx`, and `mobile-gate.tsx` differ from
+routines' originals in one way: routines' versions call its own
+`useTranslation()` hook directly for their copy, which a shared component
+can't do (no app's i18n module is shared yet). Here they take the
+translated string(s) as props instead — `cancelLabel`/`backLabel`/
+`message`. `mobile-gate.tsx` also drops routines' service-worker
+registration and `navigator.storage.persist()` calls, which are per-app
+setup, not part of the gate shape.
 
 ## Dependencies a consuming repo needs
 
@@ -63,24 +72,29 @@ props instead — the caller passes its own translated string.
   animation exists in your `globals.css` (routines defines it there) — copy
   that keyframe along with the component, or drop the class if you don't
   need the pop-in animation.
+- `mobile-gate.tsx` assumes a `phone-sized:` custom Tailwind variant exists
+  in your `globals.css` (routines defines it as a viewport-width `@custom-variant`)
+  — copy that variant definition along with the component.
 - Design tokens (colors, true-black OLED background, etc.) are **not**
   included — those are per-app product decisions, not shared defaults; see
   the issue's own note on this.
+- The shadcn setup itself (`components.json` choice, plus a hand-patch
+  `button.tsx` needs after regeneration) is documented separately at
+  [`../configs/shadcn`](../configs/shadcn), not copied here — see that
+  directory's own README for why.
 
-## Not extracted yet (on purpose)
+## Not extracted (on purpose) — the coupling audit's result
 
-Per the issue's own "worth a design pass on which ones are actually
-generic before extracting" note, these were left out of this first pass
-rather than force-extracted:
+The issue asked for "a design pass on which ones are actually generic
+before extracting." That pass happened; this is what it found:
 
-- **`EmptyState` family** — routines' version is tightly coupled to its
-  own i18n keys (`emptyTitle`, `noRoutinesTodayTitle`, etc.) for every
-  piece of copy, not just a label or two like `AppBar`/`ConfirmDrawer`
-  above. Making it generic means redesigning its props (title/description/
-  action) from scratch, not just swapping one `useTranslation()` call for
-  a prop — worth doing once there's a second real consumer to design the
-  prop shape against, not speculatively now.
-- **`mobile-gate.tsx`, `app-lock-gate.tsx`** — carry real app-specific
-  logic (service worker registration, WebAuthn/encryption calls), not just
-  presentation. The issue itself flags these as needing a coupling audit
-  before extraction; that audit hasn't happened yet.
+- **`app-lock-gate.tsx`** — not a UI component wearing app-specific logic,
+  but an entire feature (WebAuthn PRF enrollment/unlock state, encryption
+  key derivation, multiple screens, an escape-hatch data-erasure flow)
+  that happens to render something. Redesigning it to be "just UI" would
+  mean stripping out everything that makes it useful — there's no
+  meaningful prop-driven version that isn't just routines' `app-lock.ts`
+  and `use-store.ts` re-implemented behind different names. If a second
+  app ever wants the identical WebAuthn app-lock feature, that's a future
+  `@maat-apps/app-lock` **feature** package (state + logic + UI together),
+  not a `ui` component.
