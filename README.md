@@ -12,6 +12,10 @@ behind them exists here.
 
 ## What's here
 
+- [`STRUCTURE.md`](./STRUCTURE.md) — the common app layout/conventions
+  every `maat-apps` app starts from (folder structure, routing, i18n,
+  testing) — link to it from an app's own `CLAUDE.md` instead of
+  re-documenting the generic pattern there.
 - [`configs/`](./configs) — shared ESLint, Prettier, and base TypeScript
   config, extracted from `routines`. See its own README for how to use them.
 - [`ui/`](./ui) — hand-built UI components extracted from `routines`
