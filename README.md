@@ -14,3 +14,6 @@ behind them exists here.
 
 - [`configs/`](./configs) — shared ESLint, Prettier, and base TypeScript
   config, extracted from `routines`. See its own README for how to use them.
+- [`ui/`](./ui) — hand-built UI components extracted from `routines`
+  (drawer, app bar, progress ring, and a few others). See its own README
+  for what's there and what's deliberately not extracted yet.
