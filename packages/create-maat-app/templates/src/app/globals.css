@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+/* Only needed if this app uses src/components/mobile-gate.tsx (mobile-only
+   apps) — matches the viewport routines treats as "phone-sized". Drop this
+   if the app supports desktop and doesn't use MobileGate. */
+@custom-variant phone-sized (@media (max-width: 481px), @media (max-height: 481px) and (orientation: landscape));
+
+:root {
+  --background: #000000;
+  --foreground: #ffffff;
+  --muted-foreground: #a1a1aa;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
