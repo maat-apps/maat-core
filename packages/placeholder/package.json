@@ -1,0 +1,19 @@
+{
+  "name": "@maat-apps/placeholder",
+  "version": "0.0.1",
+  "description": "Proves the npm workspaces publish/consume loop end-to-end. Delete once a real package (e.g. @maat-apps/ui) has published successfully at least once.",
+  "type": "module",
+  "main": "index.js",
+  "files": [
+    "index.js"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maat-apps/maat-core.git",
+    "directory": "packages/placeholder"
+  },
+  "license": "MIT"
+}
