@@ -1,0 +1,35 @@
+name: Publish package
+
+# Manual, per-package publish — no Changesets/tag-parsing yet (issue #18
+# defers that until there are 2+ packages actually publishing). Bump the
+# chosen package's version in its package.json first, then run this against
+# main.
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: "Workspace package directory name under packages/ (e.g. placeholder, ui)"
+        required: true
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          registry-url: "https://registry.npmjs.org"
+
+      - run: npm ci
+
+      # --if-present: most packages here (e.g. placeholder) have no build
+      # step; ones that do (e.g. a future @maat-apps/ui) declare their own
+      # "build" script and this picks it up without a workflow change.
+      - run: npm run build --workspace "packages/${{ inputs.package }}" --if-present
+
+      - run: npm publish --workspace "packages/${{ inputs.package }}" --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

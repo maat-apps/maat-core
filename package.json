@@ -1,0 +1,12 @@
+{
+  "name": "maat-core",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24",
+    "npm": ">=11"
+  },
+  "workspaces": [
+    "packages/*"
+  ]
+}
