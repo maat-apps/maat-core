@@ -2,7 +2,10 @@
  * routines' own (no service worker, no @dnd-kit, no IndexedDB storage —
  * see maat-core/STRUCTURE.md for what's actually generic vs. routines-
  * specific). Add those back per-app once needed. */
-export function buildPackageJson(appName) {
+export function buildPackageJson(appName, desktop = false) {
+  const e2eProjects = desktop
+    ? ["desktop-chromium", "desktop-webkit"]
+    : ["mobile-chromium", "mobile-iphone"];
   return {
     name: appName,
     version: "0.1.0",
@@ -24,8 +27,7 @@ export function buildPackageJson(appName) {
       "test:unit": "vitest run",
       "test:unit:watch": "vitest",
       "test:coverage": "vitest run --coverage",
-      "test:e2e":
-        "playwright test --project=mobile-chromium --project=mobile-iphone",
+      "test:e2e": `playwright test ${e2eProjects.map((project) => `--project=${project}`).join(" ")}`,
       validate:
         "npm run lint && npm run format:check && npm run typecheck && npm run test:coverage && npm run test:e2e && npm run build && npm audit",
       "validate:fix": "npm run lint:fix && npm run format && npm audit fix",
@@ -40,6 +42,7 @@ export function buildPackageJson(appName) {
       "@eslint/js": "^9",
       "@playwright/test": "^1.63.0",
       "@tailwindcss/postcss": "^4",
+      "@testing-library/react": "^16.3.3",
       "@types/node": "^24",
       "@types/react": "^19",
       "@types/react-dom": "^19",

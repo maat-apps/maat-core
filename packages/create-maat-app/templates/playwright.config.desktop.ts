@@ -15,12 +15,12 @@ export default defineConfig({
   },
   projects: [
     {
-      name: "mobile-chromium",
-      use: { ...devices["Galaxy A55"] },
+      name: "desktop-chromium",
+      use: { ...devices["Desktop Chrome"] },
     },
     {
-      name: "mobile-iphone",
-      use: { ...devices["iPhone 13"] },
+      name: "desktop-webkit",
+      use: { ...devices["Desktop Safari"] },
     },
   ],
 });

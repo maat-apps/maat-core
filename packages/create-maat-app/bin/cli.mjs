@@ -69,7 +69,14 @@ if (desktop) {
     force: true,
   });
   rmSync(path.join(targetDir, "src", "app", "root.tsx"), { force: true });
+  copyFileSync(
+    path.join(templatesDir, "playwright.config.desktop.ts"),
+    path.join(targetDir, "playwright.config.ts"),
+  );
 }
+rmSync(path.join(targetDir, "playwright.config.desktop.ts"), {
+  force: true,
+});
 
 // 3. Shared configs, copied (not installed — no published package yet).
 copyDir(
@@ -106,9 +113,15 @@ copyFileSync(
 // 5. Parameterized files.
 writeFileSync(
   path.join(targetDir, "package.json"),
-  JSON.stringify(buildPackageJson(appName), null, 2) + "\n",
+  JSON.stringify(buildPackageJson(appName, desktop), null, 2) + "\n",
 );
 replaceTokens(path.join(targetDir, "index.html"), { "{{APP_NAME}}": appName });
+replaceTokens(path.join(targetDir, "vite.config.ts"), {
+  "{{APP_NAME}}": appName,
+});
+replaceTokens(path.join(targetDir, "playwright.config.ts"), {
+  "{{APP_NAME}}": appName,
+});
 replaceTokens(path.join(targetDir, "CLAUDE.md"), {
   "{{APP_NAME}}": appName,
   "{{MOBILE_LINE}}": desktop
