@@ -4,6 +4,14 @@ name: Publish package
 # defers that until there are 2+ packages actually publishing). Bump the
 # chosen package's version in its package.json first, then run this against
 # main.
+#
+# This stages a version rather than publishing it live: the NPM_TOKEN is a
+# stage-only granular token (deliberate — a token that can publish directly
+# and unattended would mean the account's 2FA protects nothing on the
+# publish path itself). A maintainer with 2FA enabled must promote the
+# staged version at npmjs.com (Access Tokens -> Staged Packages) before it's
+# actually installable. Requires npm >=11.15.0 (the version actions/setup-node
+# bundles for node-version 24 already satisfies this).
 on:
   workflow_dispatch:
     inputs:
@@ -30,6 +38,6 @@ jobs:
       # "build" script and this picks it up without a workflow change.
       - run: npm run build --workspace "packages/${{ inputs.package }}" --if-present
 
-      - run: npm publish --workspace "packages/${{ inputs.package }}" --access public
+      - run: npm stage publish --workspace "packages/${{ inputs.package }}" --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
