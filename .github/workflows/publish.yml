@@ -4,6 +4,23 @@ name: Publish package
 # defers that until there are 2+ packages actually publishing). Bump the
 # chosen package's version in its package.json first, then run this against
 # main.
+#
+# This stages a version rather than publishing it live. Authenticates via
+# npm Trusted Publishing (OIDC) — no stored token at all, see the
+# id-token: write permission below — rather than an NPM_TOKEN secret. Each
+# package's Trusted Publisher connection on npmjs.com is scoped to this
+# exact workflow file and only allows "npm stage publish", not direct
+# "npm publish" (npm's own "not recommended" guidance on allowing direct
+# publish, and this repo's own preference for a real human-with-2FA
+# checkpoint on every release rather than a fully unattended one) — so a
+# maintainer with 2FA enabled must still promote each staged version at
+# npmjs.com (Access Tokens -> Staged Packages) before it's installable.
+# Requires npm >=11.15.0 (the version actions/setup-node bundles for
+# node-version 24 already satisfies this) and the package's own npmjs.com
+# Trusted Publisher entry to already exist (npm's bootstrapping
+# limitation — a package's first-ever version can't be staged/trusted-
+# published, since there's nothing yet to establish trust against; it has
+# to be published manually, once, before any of this applies).
 on:
   workflow_dispatch:
     inputs:
@@ -11,6 +28,10 @@ on:
         description: "Workspace package directory name under packages/ (e.g. placeholder, ui)"
         required: true
         type: string
+
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
   publish:
@@ -30,6 +51,4 @@ jobs:
       # "build" script and this picks it up without a workflow change.
       - run: npm run build --workspace "packages/${{ inputs.package }}" --if-present
 
-      - run: npm publish --workspace "packages/${{ inputs.package }}" --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: npm stage publish --workspace "packages/${{ inputs.package }}" --access public
