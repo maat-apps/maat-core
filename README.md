@@ -24,6 +24,10 @@ behind them exists here.
 - [`ui/`](./ui) — hand-built UI components extracted from `routines`
   (drawer, app bar, progress ring, and a few others). See its own README
   for what's there and what's deliberately not extracted yet.
+- [`packages/create-maat-app`](./packages/create-maat-app) — a CLI that
+  scaffolds a new `maat-apps` repo matching routines' structure
+  (`STRUCTURE.md`, shared configs, the `.claude/` tooling baseline). See
+  its own README for usage.
 
 ## Packages
 

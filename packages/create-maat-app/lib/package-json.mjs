@@ -1,0 +1,65 @@
+/** The generated repo's package.json — a trimmed, PWA-free baseline vs.
+ * routines' own (no service worker, no @dnd-kit, no IndexedDB storage —
+ * see maat-core/STRUCTURE.md for what's actually generic vs. routines-
+ * specific). Add those back per-app once needed. */
+export function buildPackageJson(appName) {
+  return {
+    name: appName,
+    version: "0.1.0",
+    private: true,
+    type: "module",
+    engines: {
+      node: ">=24",
+      npm: ">=11",
+    },
+    scripts: {
+      dev: "vite",
+      build: "tsc -b && vite build",
+      preview: "vite preview",
+      lint: "eslint",
+      "lint:fix": 'eslint "**/*.{ts,tsx,js,jsx}" --fix',
+      "format:check": "prettier --check .",
+      format: "prettier --write .",
+      typecheck: "tsc -b",
+      "test:unit": "vitest run",
+      "test:unit:watch": "vitest",
+      "test:coverage": "vitest run --coverage",
+      "test:e2e":
+        "playwright test --project=mobile-chromium --project=mobile-iphone",
+      validate:
+        "npm run lint && npm run format:check && npm run typecheck && npm run test:coverage && npm run test:e2e && npm run build && npm audit",
+      "validate:fix": "npm run lint:fix && npm run format && npm audit fix",
+    },
+    dependencies: {
+      react: "^19",
+      "react-dom": "^19",
+      "react-router": "^7",
+      valibot: "^1.5.0",
+    },
+    devDependencies: {
+      "@eslint/js": "^9",
+      "@playwright/test": "^1.63.0",
+      "@tailwindcss/postcss": "^4",
+      "@types/node": "^24",
+      "@types/react": "^19",
+      "@types/react-dom": "^19",
+      "@vitejs/plugin-react": "^5",
+      "@vitest/coverage-v8": "^5",
+      eslint: "^10",
+      "eslint-config-prettier": "^10",
+      "eslint-plugin-prettier": "^5",
+      "eslint-plugin-react-hooks": "^7",
+      "eslint-plugin-react-refresh": "^0.4",
+      globals: "^16",
+      jsdom: "^30",
+      prettier: "^3",
+      "prettier-plugin-organize-imports": "^4",
+      "prettier-plugin-tailwindcss": "^0.8",
+      tailwindcss: "^4",
+      typescript: "^5",
+      "typescript-eslint": "^8",
+      vite: "^7",
+      vitest: "^5",
+    },
+  };
+}
