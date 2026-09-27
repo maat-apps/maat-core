@@ -19,8 +19,13 @@
   --rdp-control-radius: max(0px, calc(var(--rdp-radius) - 2px));
   --rdp-panel-radius: var(--rdp-radius);
   --rdp-shadow: var(--shadow-sm, 0 1px 2px rgb(0 0 0 / 0.05));
-  --rdp-scrollbar-thumb: color-mix(in oklab, var(--rdp-muted-color) 70%, transparent);
-  --rdp-input-focus-shadow: 0 0 0 3px color-mix(in oklab, var(--rdp-focus-ring) 24%, transparent);
+  --rdp-scrollbar-thumb: color-mix(
+    in oklab,
+    var(--rdp-muted-color) 70%,
+    transparent
+  );
+  --rdp-input-focus-shadow: 0 0 0 3px
+    color-mix(in oklab, var(--rdp-focus-ring) 24%, transparent);
 }
 
 .rdp-root {
@@ -68,8 +73,12 @@
   --rdp-cell-padding: 2px;
   --rdp-day_button-height: 2rem;
   --rdp-day_button-width: 2rem;
-  --rdp-day-height: calc(var(--rdp-day_button-height) + var(--rdp-cell-padding) * 2);
-  --rdp-day-width: calc(var(--rdp-day_button-width) + var(--rdp-cell-padding) * 2);
+  --rdp-day-height: calc(
+    var(--rdp-day_button-height) + var(--rdp-cell-padding) * 2
+  );
+  --rdp-day-width: calc(
+    var(--rdp-day_button-width) + var(--rdp-cell-padding) * 2
+  );
   --rdp-day_button-font-size: 0.8125rem;
   --rdp-caption-font-size: 0.875rem;
   --rdp-grid-button-height: 2.375rem;
@@ -88,11 +97,16 @@
   --rdp-caption-chevron-size: 0.875rem;
   --rdp-months-gap: 1rem;
   --rdp-calendar-width: calc(var(--rdp-day-width) * 7);
-  --rdp-shell-width: calc(var(--rdp-calendar-width) + var(--rdp-shell-padding) * 2);
+  --rdp-shell-width: calc(
+    var(--rdp-calendar-width) + var(--rdp-shell-padding) * 2
+  );
   --rdp-view-body-height: calc(var(--rdp-day-height) * 6 + 1.75rem);
-  --rdp-picker-body-height: calc(var(--rdp-view-body-height) - var(--rdp-picker-header-gap));
+  --rdp-picker-body-height: calc(
+    var(--rdp-view-body-height) - var(--rdp-picker-header-gap)
+  );
   --rdp-panel-height: calc(
-    var(--rdp-shell-padding) * 2 + var(--rdp-nav-height) + var(--rdp-view-body-height)
+    var(--rdp-shell-padding) * 2 + var(--rdp-nav-height) +
+      var(--rdp-view-body-height)
   );
   --rdp-animation-duration: 160ms;
 
@@ -110,16 +124,18 @@
 
 .rdp-shell[data-months="2"] {
   --rdp-shell-width: calc(
-    var(--rdp-calendar-width) + var(--rdp-calendar-width) + var(--rdp-months-gap) +
-      var(--rdp-shell-padding) + var(--rdp-shell-padding)
+    var(--rdp-calendar-width) + var(--rdp-calendar-width) +
+      var(--rdp-months-gap) + var(--rdp-shell-padding) +
+      var(--rdp-shell-padding)
   );
   max-width: none;
 }
 
 .rdp-shell[data-months="3"] {
   --rdp-shell-width: calc(
-    var(--rdp-calendar-width) + var(--rdp-calendar-width) + var(--rdp-calendar-width) +
-      var(--rdp-months-gap) + var(--rdp-months-gap) + var(--rdp-shell-padding) +
+    var(--rdp-calendar-width) + var(--rdp-calendar-width) +
+      var(--rdp-calendar-width) + var(--rdp-months-gap) +
+      var(--rdp-months-gap) + var(--rdp-shell-padding) +
       var(--rdp-shell-padding)
   );
   max-width: none;
@@ -760,7 +776,8 @@
 /* Range start CELL - dark bg, rounded left, flat right for continuity */
 .rdp-day.rdp-range_start:not(.rdp-range_end) {
   background-color: var(--rdp-range_start-date-background-color);
-  border-radius: var(--rdp-day_button-border-radius) 0 0 var(--rdp-day_button-border-radius);
+  border-radius: var(--rdp-day_button-border-radius) 0 0
+    var(--rdp-day_button-border-radius);
 }
 
 /* Range start BUTTON - transparent, inherits cell appearance */
@@ -792,7 +809,8 @@
 /* Range end CELL - dark bg, flat left, rounded right */
 .rdp-day.rdp-range_end:not(.rdp-range_start) {
   background-color: var(--rdp-range_end-date-background-color);
-  border-radius: 0 var(--rdp-day_button-border-radius) var(--rdp-day_button-border-radius) 0;
+  border-radius: 0 var(--rdp-day_button-border-radius)
+    var(--rdp-day_button-border-radius) 0;
 }
 
 /* Range end BUTTON - transparent, inherits cell appearance */
@@ -900,44 +918,56 @@
   }
 }
 
-.rdp-shell[data-animated="true"][data-month-transition="slide"] .rdp-weeks_before_enter {
-  animation: rdp-slide_in_left var(--rdp-animation_duration) var(--rdp-animation_timing) forwards;
+.rdp-shell[data-animated="true"][data-month-transition="slide"]
+  .rdp-weeks_before_enter {
+  animation: rdp-slide_in_left var(--rdp-animation_duration)
+    var(--rdp-animation_timing) forwards;
 }
 
-.rdp-shell[data-animated="true"][data-month-transition="slide"] .rdp-weeks_before_exit {
-  animation: rdp-slide_out_left var(--rdp-animation_duration) var(--rdp-animation_timing) forwards;
+.rdp-shell[data-animated="true"][data-month-transition="slide"]
+  .rdp-weeks_before_exit {
+  animation: rdp-slide_out_left var(--rdp-animation_duration)
+    var(--rdp-animation_timing) forwards;
 }
 
-.rdp-shell[data-animated="true"][data-month-transition="slide"] .rdp-weeks_after_enter {
-  animation: rdp-slide_in_right var(--rdp-animation_duration) var(--rdp-animation_timing) forwards;
+.rdp-shell[data-animated="true"][data-month-transition="slide"]
+  .rdp-weeks_after_enter {
+  animation: rdp-slide_in_right var(--rdp-animation_duration)
+    var(--rdp-animation_timing) forwards;
 }
 
-.rdp-shell[data-animated="true"][data-month-transition="slide"] .rdp-weeks_after_exit {
-  animation: rdp-slide_out_right var(--rdp-animation_duration) var(--rdp-animation_timing) forwards;
+.rdp-shell[data-animated="true"][data-month-transition="slide"]
+  .rdp-weeks_after_exit {
+  animation: rdp-slide_out_right var(--rdp-animation_duration)
+    var(--rdp-animation_timing) forwards;
 }
 
 .rdp-shell[data-animated="true"][data-month-transition="slide"]
   .rdp-root[dir="rtl"]
   .rdp-weeks_after_enter {
-  animation: rdp-slide_in_left var(--rdp-animation_duration) var(--rdp-animation_timing) forwards;
+  animation: rdp-slide_in_left var(--rdp-animation_duration)
+    var(--rdp-animation_timing) forwards;
 }
 
 .rdp-shell[data-animated="true"][data-month-transition="slide"]
   .rdp-root[dir="rtl"]
   .rdp-weeks_before_exit {
-  animation: rdp-slide_out_right var(--rdp-animation_duration) var(--rdp-animation_timing) forwards;
+  animation: rdp-slide_out_right var(--rdp-animation_duration)
+    var(--rdp-animation_timing) forwards;
 }
 
 .rdp-shell[data-animated="true"][data-month-transition="slide"]
   .rdp-root[dir="rtl"]
   .rdp-weeks_before_enter {
-  animation: rdp-slide_in_right var(--rdp-animation_duration) var(--rdp-animation_timing) forwards;
+  animation: rdp-slide_in_right var(--rdp-animation_duration)
+    var(--rdp-animation_timing) forwards;
 }
 
 .rdp-shell[data-animated="true"][data-month-transition="slide"]
   .rdp-root[dir="rtl"]
   .rdp-weeks_after_exit {
-  animation: rdp-slide_out_left var(--rdp-animation_duration) var(--rdp-animation_timing) forwards;
+  animation: rdp-slide_out_left var(--rdp-animation_duration)
+    var(--rdp-animation_timing) forwards;
 }
 
 @keyframes rdp-fade_in {
@@ -958,18 +988,28 @@
   }
 }
 
-.rdp-shell[data-animated="true"][data-month-transition="fade"] .rdp-weeks_before_enter,
-.rdp-shell[data-animated="true"][data-month-transition="fade"] .rdp-weeks_after_enter,
-.rdp-shell[data-animated="true"]:not([data-month-transition="none"]) .rdp-caption_after_enter,
-.rdp-shell[data-animated="true"]:not([data-month-transition="none"]) .rdp-caption_before_enter {
-  animation: rdp-fade_in var(--rdp-animation_duration) var(--rdp-animation_timing) forwards;
+.rdp-shell[data-animated="true"][data-month-transition="fade"]
+  .rdp-weeks_before_enter,
+.rdp-shell[data-animated="true"][data-month-transition="fade"]
+  .rdp-weeks_after_enter,
+.rdp-shell[data-animated="true"]:not([data-month-transition="none"])
+  .rdp-caption_after_enter,
+.rdp-shell[data-animated="true"]:not([data-month-transition="none"])
+  .rdp-caption_before_enter {
+  animation: rdp-fade_in var(--rdp-animation_duration)
+    var(--rdp-animation_timing) forwards;
 }
 
-.rdp-shell[data-animated="true"][data-month-transition="fade"] .rdp-weeks_before_exit,
-.rdp-shell[data-animated="true"][data-month-transition="fade"] .rdp-weeks_after_exit,
-.rdp-shell[data-animated="true"]:not([data-month-transition="none"]) .rdp-caption_after_exit,
-.rdp-shell[data-animated="true"]:not([data-month-transition="none"]) .rdp-caption_before_exit {
-  animation: rdp-fade_out var(--rdp-animation_duration) var(--rdp-animation_timing) forwards;
+.rdp-shell[data-animated="true"][data-month-transition="fade"]
+  .rdp-weeks_before_exit,
+.rdp-shell[data-animated="true"][data-month-transition="fade"]
+  .rdp-weeks_after_exit,
+.rdp-shell[data-animated="true"]:not([data-month-transition="none"])
+  .rdp-caption_after_exit,
+.rdp-shell[data-animated="true"]:not([data-month-transition="none"])
+  .rdp-caption_before_exit {
+  animation: rdp-fade_out var(--rdp-animation_duration)
+    var(--rdp-animation_timing) forwards;
 }
 
 /* Input trigger and popover composition */
@@ -998,7 +1038,9 @@
   white-space: nowrap;
 }
 
-.rdp-input_control:not(:has(.rdp-input_clear)) .rdp-input_surface [data-slot="input"] {
+.rdp-input_control:not(:has(.rdp-input_clear))
+  .rdp-input_surface
+  [data-slot="input"] {
   padding-inline-end: 0.75rem;
 }
 
@@ -1039,18 +1081,7 @@
   inset-block-start: 50%;
   inset-inline-end: 0.25rem;
   transform: translateY(-50%);
-  width: 1.75rem !important;
-  height: 1.75rem !important;
-  min-width: 1.75rem !important;
-  min-height: 1.75rem !important;
   border-radius: var(--rdp-control-radius) !important;
-}
-
-.rdp-input_control[data-size="sm"] .rdp-input_clear {
-  width: 1.5rem !important;
-  height: 1.5rem !important;
-  min-width: 1.5rem !important;
-  min-height: 1.5rem !important;
 }
 
 .rdp-input_control[data-disabled="true"] .rdp-input_trigger {

@@ -37,6 +37,25 @@ import { cn } from "./cn";
 type PickerView = "days" | "months" | "years";
 
 export type DatePickerSize = "sm" | "md" | "lg";
+
+const DATE_PICKER_INPUT_SIZE_MAP: Record<
+  DatePickerSize,
+  "sm" | "default" | "lg"
+> = {
+  sm: "sm",
+  md: "default",
+  lg: "lg",
+};
+
+const DATE_PICKER_CLEAR_BUTTON_SIZE_MAP: Record<
+  DatePickerSize,
+  "icon-xs" | "icon-sm" | "icon-lg"
+> = {
+  sm: "icon-xs",
+  md: "icon-sm",
+  lg: "icon-lg",
+};
+
 export type DatePickerMonthTransition = "slide" | "fade" | "none";
 export type DatePickerViewTransition = "fade" | "scale" | "none";
 export type DateFormatPreset =
@@ -94,6 +113,7 @@ type SharedPickerProps = {
   minDate?: Date;
   maxDate?: Date;
   disabledDates?: Matcher | Matcher[];
+  /** Opt-in keyboard-navigable year/month jump grid. Defaults to false. */
   enableYearMonthPicker?: boolean;
   animated?: boolean;
   monthTransition?: DatePickerMonthTransition;
@@ -435,10 +455,16 @@ function isCompleteRange(
   return isValidDate(range?.from) && isValidDate(range?.to);
 }
 
-function useControllableValue<T>(
+/**
+ * Shared controlled/uncontrolled value pattern. Falls back to internal state
+ * when `controlledValue` is undefined, and re-syncs internal state whenever a
+ * consumer switches between controlled and uncontrolled at runtime (tracked
+ * via `wasControlled`), so neither mode is left holding stale state.
+ */
+function useControllable<T>(
   controlledValue: T | undefined,
   defaultValue: T | undefined,
-  onValueChange: ((value: T | undefined) => void) | undefined,
+  onChange: ((value: T | undefined) => void) | undefined,
 ) {
   const [internalValue, setInternalValue] = React.useState<T | undefined>(
     defaultValue,
@@ -456,12 +482,20 @@ function useControllableValue<T>(
   const setValue = React.useCallback(
     (nextValue: T | undefined) => {
       setInternalValue(nextValue);
-      onValueChange?.(nextValue);
+      onChange?.(nextValue);
     },
-    [onValueChange],
+    [onChange],
   );
 
   return [value, setValue] as const;
+}
+
+function useControllableValue<T>(
+  controlledValue: T | undefined,
+  defaultValue: T | undefined,
+  onValueChange: ((value: T | undefined) => void) | undefined,
+) {
+  return useControllable(controlledValue, defaultValue, onValueChange);
 }
 
 function useControllableOpen(
@@ -469,18 +503,12 @@ function useControllableOpen(
   defaultOpen: boolean,
   onOpenChange: ((open: boolean) => void) | undefined,
 ) {
-  const [internalOpen, setInternalOpen] = React.useState(defaultOpen);
-  const open = controlledOpen ?? internalOpen;
-
-  const setOpen = React.useCallback(
-    (nextOpen: boolean) => {
-      setInternalOpen(nextOpen);
-      onOpenChange?.(nextOpen);
-    },
-    [onOpenChange],
+  const [open, setOpen] = useControllable<boolean>(
+    controlledOpen,
+    defaultOpen,
+    (value) => onOpenChange?.(value ?? defaultOpen),
   );
-
-  return [open, setOpen] as const;
+  return [open ?? defaultOpen, setOpen] as const;
 }
 
 const Chevron: CustomComponents["Chevron"] = ({ orientation, ...props }) => {
@@ -1016,7 +1044,7 @@ function CalendarSurface({
   minDate,
   maxDate,
   disabledDates,
-  enableYearMonthPicker = true,
+  enableYearMonthPicker = false,
   animated = true,
   monthTransition = "slide",
   viewTransition = "fade",
@@ -1437,6 +1465,8 @@ function DatePickerTrigger({
   clearLabel: string;
 }) {
   const hasValue = Boolean(value);
+  const inputSize = DATE_PICKER_INPUT_SIZE_MAP[size];
+  const clearButtonSize = DATE_PICKER_CLEAR_BUTTON_SIZE_MAP[size];
 
   return (
     <div
@@ -1445,11 +1475,9 @@ function DatePickerTrigger({
       data-disabled={disabled || undefined}
     >
       <CalendarIcon className="rdp-input_icon" aria-hidden="true" />
-      {/* @maat-apps/ui's Input has no size variant (unlike the generated
-          registry component this was extracted from) — sizing here comes
-          entirely from this wrapper's [data-size] attribute. */}
       <Input
         aria-hidden="true"
+        size={inputSize}
         className={cn("rdp-input_surface", triggerClassName)}
         disabled={disabled}
         placeholder={placeholder}
@@ -1472,7 +1500,7 @@ function DatePickerTrigger({
         <Button
           type="button"
           variant="ghost"
-          size="icon-sm"
+          size={clearButtonSize}
           className="rdp-input_clear"
           disabled={disabled}
           aria-label={clearLabel}
