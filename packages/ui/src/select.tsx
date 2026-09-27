@@ -1,6 +1,6 @@
 import { cn } from "./cn";
 import { Select as SelectPrimitive } from "@base-ui/react/select";
-import { CheckIcon, ChevronDownIcon } from "lucide-react";
+import { Check as CheckIcon, CaretDown as ChevronDownIcon } from "@phosphor-icons/react";
 
 function Select({ ...props }: SelectPrimitive.Root.Props<string>) {
   return <SelectPrimitive.Root data-slot="select" {...props} />;
