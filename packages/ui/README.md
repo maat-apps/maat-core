@@ -62,9 +62,9 @@ the gate shape.
   (^1.8.0) — required, must be a single shared instance across the app, so
   they're peers rather than bundled. `@dnd-kit/sortable` is an optional
   peer, only needed if you use `drag-handle.tsx`.
-  `class-variance-authority`, `clsx`, `tailwind-merge`, and `lucide-react`
-  are regular dependencies of this package — you don't need to install
-  them yourself.
+  `class-variance-authority`, `clsx`, `tailwind-merge`, and
+  `@phosphor-icons/react` are regular dependencies of this package — you
+  don't need to install them yourself.
 - **Same `base-nova`/Tailwind v4 token setup as routines** (design tokens
   themselves aren't included — see below); see
   [`../../configs/shadcn`](../../configs/shadcn) for the shadcn config

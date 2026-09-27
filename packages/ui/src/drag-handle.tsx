@@ -1,5 +1,5 @@
 import type { useSortable } from "@dnd-kit/sortable";
-import { GripVertical } from "lucide-react";
+import { DotsSixVertical } from "@phosphor-icons/react";
 
 import { Button } from "./button";
 import { cn } from "./cn";
@@ -23,7 +23,7 @@ export function DragHandle({
       {...attributes}
       {...listeners}
     >
-      <GripVertical aria-hidden="true" />
+      <DotsSixVertical aria-hidden="true" />
     </Button>
   );
 }
