@@ -26,6 +26,54 @@ everything from one barrel for convenience.
 - `input.tsx` — the shadcn `Input` (text input).
 - `select.tsx` — the shadcn `Select` family (`Select`, `SelectTrigger`,
   `SelectContent`, `SelectItem`, `SelectValue`).
+- `field.tsx` — the shadcn/baseui-cn `Field` family (`Field`, `FieldLabel`,
+  `FieldItem`, `FieldDescription`, `FieldError`) — a labeled-control
+  wrapper, pulled in as a dependency of `date-picker.tsx`.
+- `popover.tsx` — the shadcn `Popover` family (`Popover`, `PopoverTrigger`,
+  `PopoverContent`, plus `PopoverHeader`/`PopoverTitle`/`PopoverDescription`),
+  also a dependency of `date-picker.tsx`.
+- `chart.tsx` — the shadcn `Chart` family (`ChartContainer`, `ChartConfig`,
+  `ChartTooltip`/`ChartTooltipContent`, `ChartLegend`/`ChartLegendContent`,
+  `ChartStyle`) wrapping [Recharts](https://recharts.org), per
+  [maat-apps/maat-core#35](https://github.com/maat-apps/maat-core/issues/35).
+  Series colors are set via `ChartConfig`'s `color`/`theme` and consumed as
+  CSS custom properties (`--color-<key>`) scoped to each chart's
+  `data-chart` id — see shadcn's own
+  [chart docs](https://ui.shadcn.com/docs/components/chart) for the usage
+  pattern, unchanged here. Extracted verbatim from
+  `npx shadcn@latest add chart` against this repo's
+  `configs/shadcn/components.json` — no hand-patches.
+- `date-picker.tsx` — the baseui-cn `Date Picker` family (`DatePicker`,
+  `DatePickerInput`, `DateRangePicker`, `DateRangePickerInput`, plus the
+  `DatePickerPresets` helper), built on
+  [`@daypicker/react`](https://www.npmjs.com/package/@daypicker/react) (the
+  current package name for what's still commonly called "react-day-picker"
+  — same maintainers, same API) and `date-fns`, per
+  [maat-apps/maat-core#36](https://github.com/maat-apps/maat-core/issues/36).
+  Extracted from `npx baseui-cn@latest add date-picker` (run against this
+  repo's `configs/shadcn/components.json`-equivalent setup), with three
+  changes on top of the generated output:
+  - Icons were swapped from `lucide-react` (baseui-cn's default) to
+    `@phosphor-icons/react`, matching every other icon in this package
+    (`CalendarBlank`/`CaretDown`/`CaretLeft`/`CaretRight`/`X`).
+  - It imports this package's own `button.tsx`/`input.tsx`/`field.tsx`/
+    `popover.tsx` instead of re-generating local copies — `variant`/`size`
+    values used here (`ghost`, `outline`, `sm`, `icon-sm`) already exist on
+    this package's `Button`.
+  - `input.tsx` here has no `size` variant (unlike the generated
+    registry component's own local `Input`), so `DatePickerTrigger` no
+    longer forwards a `size` prop to `Input` — sizing comes entirely from
+    the `.rdp-input_control[data-size]` wrapper the stylesheet below
+    already keys off of.
+  - Ships with `date-picker.css` (import as `@maat-apps/ui/date-picker.css`)
+    — a separate stylesheet, **not** imported by `date-picker.tsx` itself
+    (same posture as `progress-ring.tsx`'s keyframe below: this package
+    ships the styles, a consuming app opts in explicitly). It maps
+    `DayPicker`'s CSS custom properties onto this ecosystem's own design
+    tokens (`--background`, `--popover`, `--primary`, `--accent`,
+    `--border`, `--ring`, `--muted`, `--secondary`) unchanged — trainer's
+    and routines' `globals.css` already define all of them, being the same
+    Tailwind v4 / shadcn `base-nova` setup.
 - `settings-primitives.tsx` — `SettingsSection`/`SettingsRow`: a titled
   section + labeled-row pattern for any settings-style list, not just app
   settings.
@@ -62,9 +110,9 @@ the gate shape.
   (^1.8.0) — required, must be a single shared instance across the app, so
   they're peers rather than bundled. `@dnd-kit/sortable` is an optional
   peer, only needed if you use `drag-handle.tsx`.
-  `class-variance-authority`, `clsx`, `tailwind-merge`, and
-  `@phosphor-icons/react` are regular dependencies of this package — you
-  don't need to install them yourself.
+  `class-variance-authority`, `clsx`, `tailwind-merge`, `date-fns`,
+  `@daypicker/react`, `recharts`, and `@phosphor-icons/react` are regular
+  dependencies of this package — you don't need to install them yourself.
 - **Same `base-nova`/Tailwind v4 token setup as routines** (design tokens
   themselves aren't included — see below); see
   [`../../configs/shadcn`](../../configs/shadcn) for the shadcn config
@@ -85,6 +133,15 @@ the gate shape.
   in your `globals.css` (routines defines it as a viewport-width
   `@custom-variant`) — copy that variant definition along with the
   component.
+- `date-picker.tsx` needs its stylesheet imported explicitly — it isn't
+  pulled in automatically:
+  ```css
+  @import "@maat-apps/ui/date-picker.css";
+  ```
+  The stylesheet reads its colors from this ecosystem's existing design
+  tokens (`--background`, `--popover`, `--primary`, `--accent`, `--border`,
+  `--ring`, `--muted`, `--secondary`) — nothing new to define if your
+  `globals.css` already has the standard `base-nova` token set.
 - Design tokens (colors, true-black OLED background, etc.) are **not**
   included — those are per-app product decisions, not shared defaults.
 
