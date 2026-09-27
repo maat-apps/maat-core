@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "./cn";
 import { Input as InputPrimitive } from "@base-ui/react/input";
 import { type ComponentProps } from "react";
 

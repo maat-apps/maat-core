@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "./cn";
 import { Drawer as DrawerPrimitive } from "@base-ui/react/drawer";
 import * as React from "react";
 

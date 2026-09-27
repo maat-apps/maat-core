@@ -1,0 +1,112 @@
+{
+  "name": "@maat-apps/ui",
+  "version": "0.1.0",
+  "description": "Shared UI components for maat-apps repos — extracted from routines, per maat-apps/maat-core#3.",
+  "type": "module",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./app-bar": {
+      "types": "./dist/app-bar.d.ts",
+      "import": "./dist/app-bar.js"
+    },
+    "./button": {
+      "types": "./dist/button.d.ts",
+      "import": "./dist/button.js"
+    },
+    "./confirm-drawer": {
+      "types": "./dist/confirm-drawer.d.ts",
+      "import": "./dist/confirm-drawer.js"
+    },
+    "./drag-handle": {
+      "types": "./dist/drag-handle.d.ts",
+      "import": "./dist/drag-handle.js"
+    },
+    "./drawer": {
+      "types": "./dist/drawer.d.ts",
+      "import": "./dist/drawer.js"
+    },
+    "./empty-state": {
+      "types": "./dist/empty-state.d.ts",
+      "import": "./dist/empty-state.js"
+    },
+    "./fab-button": {
+      "types": "./dist/fab-button.d.ts",
+      "import": "./dist/fab-button.js"
+    },
+    "./input": {
+      "types": "./dist/input.d.ts",
+      "import": "./dist/input.js"
+    },
+    "./mobile-gate": {
+      "types": "./dist/mobile-gate.d.ts",
+      "import": "./dist/mobile-gate.js"
+    },
+    "./page-header": {
+      "types": "./dist/page-header.d.ts",
+      "import": "./dist/page-header.js"
+    },
+    "./progress-ring": {
+      "types": "./dist/progress-ring.d.ts",
+      "import": "./dist/progress-ring.js"
+    },
+    "./reset-button": {
+      "types": "./dist/reset-button.d.ts",
+      "import": "./dist/reset-button.js"
+    },
+    "./select": {
+      "types": "./dist/select.d.ts",
+      "import": "./dist/select.js"
+    },
+    "./settings-primitives": {
+      "types": "./dist/settings-primitives.d.ts",
+      "import": "./dist/settings-primitives.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@base-ui/react": "^1.8.0",
+    "@dnd-kit/sortable": "^10.0.0",
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "peerDependenciesMeta": {
+    "@dnd-kit/sortable": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.42.0",
+    "tailwind-merge": "^3.3.1"
+  },
+  "devDependencies": {
+    "@base-ui/react": "^1.8.0",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "react": "^19",
+    "react-dom": "^19",
+    "tsup": "^8",
+    "typescript": "^5"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maat-apps/maat-core.git",
+    "directory": "packages/ui"
+  }
+}

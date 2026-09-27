@@ -53,8 +53,10 @@ e2e/            # Playwright specs + e2e/utils.ts
   `ui`, `components`, `lib`, `hooks`) rather than straight from an
   underlying package, so a future `npx shadcn add` or hand-adjustment
   doesn't quietly bypass the alias.
-- Shared components pulled from [`ui/`](./ui) in this repo assume this
-  same alias setup — see that directory's own README.
+- Shared components from [`@maat-apps/ui`](./packages/ui) assume this same
+  alias setup for your own code — the package itself ships an internal
+  `cn` utility rather than depending on your `@/lib/utils` alias. See that
+  package's own README for setup.
 
 ## i18n
 
