@@ -1343,7 +1343,7 @@ function DateRangePickerFooter({
           type="button"
           size="sm"
           onClick={onApply}
-          disabled={Boolean(value?.from && !value?.to)}
+          disabled={!isCompleteRange(value)}
           aria-label="Apply date range"
         >
           Apply
