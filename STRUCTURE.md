@@ -83,6 +83,17 @@ e2e/            # Playwright specs + e2e/utils.ts
   files earn their length; judge whether splitting actually improves
   readability.
 
+## Branch naming
+
+Branches use a `<type>/<short-descriptive-slug>` pattern — the type
+prefix matches Conventional Commits' type set (`feat`, `fix`, `docs`,
+`style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`), and the
+slug is a few kebab-case words describing what the branch actually adds
+or changes (`feat/bottom-navigation`, `fix/vite-config-lint-error`,
+`docs/branch-naming-convention`) — never a generic or session-scoped
+name. One branch per PR/task; don't reuse a branch name across unrelated
+changes once its PR has merged — cut a fresh one instead.
+
 ## Testing
 
 - **Unit (Vitest)**: `tests/unit/`, mirroring `src/`'s structure rather

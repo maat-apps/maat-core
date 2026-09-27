@@ -54,6 +54,10 @@ What follows here is what's specific to **{{APP_NAME}}**.
   pure waste, not extra safety.
 - Check the current branch before editing or committing anything — never
   edit or commit directly on `main`.
+- Name branches `<type>/<short-descriptive-slug>` — see
+  `maat-core/STRUCTURE.md`'s "Branch naming" section — not a generic or
+  session-scoped name; cut a fresh branch per PR/task rather than reusing
+  one across unrelated changes.
 - Commit once a task's changes are complete, then use `/open-pr` to push
   and open the PR.
 
