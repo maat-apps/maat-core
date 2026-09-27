@@ -21,9 +21,10 @@ behind them exists here.
   local and CI is a bigger win than optimizing any single run.
 - [`configs/`](./configs) — shared ESLint, Prettier, and base TypeScript
   config, extracted from `routines`. See its own README for how to use them.
-- [`ui/`](./ui) — hand-built UI components extracted from `routines`
-  (drawer, app bar, progress ring, and a few others). See its own README
-  for what's there and what's deliberately not extracted yet.
+- [`packages/ui`](./packages/ui) — the real, installable `@maat-apps/ui`
+  package (drawer, app bar, progress ring, and a few others), extracted
+  from `routines`. See its own README for what's there, the setup a
+  consuming app needs, and what's deliberately not extracted.
 - [`packages/create-maat-app`](./packages/create-maat-app) — a CLI that
   scaffolds a new `maat-apps` repo matching routines' structure
   (`STRUCTURE.md`, shared configs, the `.claude/` tooling baseline). See
@@ -32,14 +33,18 @@ behind them exists here.
 ## Packages
 
 `packages/*` is an npm workspaces monorepo publishing scoped
-`@maat-apps/*` packages to the public npm registry — the eventual home
-for real, installable versions of what's copy-pasted from `configs/`/`ui/`
-today. Publishing is CI-driven via
+`@maat-apps/*` packages to the public npm registry — real, installable
+alternatives to what's still copy-pasted from `configs/` today. Publishing
+is CI-driven via
 [`.github/workflows/publish.yml`](./.github/workflows/publish.yml)
 (`workflow_dispatch`, one package per run), authenticated with npm Trusted
 Publishing (OIDC) — no stored token. Each publish stages a version; a
 maintainer with 2FA enabled promotes it live at npmjs.com (Access Tokens →
 Staged Packages) — a deliberate per-release human checkpoint, not an
 oversight. `packages/placeholder` proved the loop end-to-end (staged →
-promoted → `npm install`d → resolved correctly); real content moving from
-`configs/`/`ui/` into actual published packages is still todo.
+promoted → `npm install`d → resolved correctly). `packages/ui` is the
+first real package built on that infrastructure — its very first version
+still needs one manual `npm publish` from a maintainer before the
+Trusted Publisher connection can even be registered (see its own README's
+"Publishing" section); `configs/` moving into an installable package is
+still todo.

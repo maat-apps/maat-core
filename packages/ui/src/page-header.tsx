@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "./cn";
 
 // Shared shell for a screen's sticky header. `fixed` (not `sticky`) so the
 // background spans the full viewport edge to edge — a `sticky` element is

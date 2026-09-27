@@ -2,7 +2,7 @@ import type { useSortable } from "@dnd-kit/sortable";
 import { GripVertical } from "lucide-react";
 
 import { Button } from "./button";
-import { cn } from "@/lib/utils";
+import { cn } from "./cn";
 
 /** The grab handle every drag-to-reorder row uses. */
 export function DragHandle({

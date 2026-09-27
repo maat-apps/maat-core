@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import { Button } from "./button";
-import { cn } from "@/lib/utils";
+import { cn } from "./cn";
 
 /** Shared shape for a floating circular/square action button. */
 export function FabButton({
