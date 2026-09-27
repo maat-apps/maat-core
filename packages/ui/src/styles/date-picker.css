@@ -1029,7 +1029,7 @@
   width: 100%;
 }
 
-.rdp-input_surface [data-slot="input"] {
+.rdp-input_surface[data-slot="input"] {
   cursor: pointer;
   overflow: hidden;
   padding-inline-start: 2.25rem;
@@ -1039,8 +1039,7 @@
 }
 
 .rdp-input_control:not(:has(.rdp-input_clear))
-  .rdp-input_surface
-  [data-slot="input"] {
+  .rdp-input_surface[data-slot="input"] {
   padding-inline-end: 0.75rem;
 }
 
