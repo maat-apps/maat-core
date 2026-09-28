@@ -1,19 +1,22 @@
 # `@maat-apps/core`
 
-Browser-platform plumbing shared by `maat-apps` apps — no React, no UI
-(components live in [`@maat-apps/ui`](../ui)). One package, one subpath per
-concern, so an app's bundle only contains what it imports.
+Browser-platform plumbing shared by `maat-apps` apps — no UI (components
+live in [`@maat-apps/ui`](../ui)). One package, one subpath per concern, so
+an app's bundle only contains what it imports.
 
-| Import                    | What                                          |
-| ------------------------- | --------------------------------------------- |
-| `@maat-apps/core/storage` | IndexedDB key-value store                     |
-| `@maat-apps/core/crypto`  | WebAuthn PRF → AES-GCM encryption, base64url  |
-| `@maat-apps/core/locale`  | Persisted locale store with device detection  |
-| `@maat-apps/core/i18n`    | `useTranslation` hook (the only React import) |
-| `@maat-apps/core/sw`      | The app's service worker, as a factory        |
+| Import                      | What                                              |
+| --------------------------- | ------------------------------------------------- |
+| `@maat-apps/core/storage`   | IndexedDB key-value store                         |
+| `@maat-apps/core/persisted` | In-memory + IndexedDB store (e.g. settings)       |
+| `@maat-apps/core/crypto`    | WebAuthn PRF → AES-GCM encryption, base64url      |
+| `@maat-apps/core/locale`    | Persisted locale store with device detection      |
+| `@maat-apps/core/i18n`      | `useTranslation` hook (React)                     |
+| `@maat-apps/core/sw`        | The app's service worker, as a factory            |
+| `@maat-apps/core/update`    | "Update app" with a pre-update data snapshot      |
+| `@maat-apps/core/install`   | `useInstallPrompt` hook for "Install app" (React) |
 
-Planned: `/lock`, `/update` (#46). `react` is an optional peer dependency,
-needed only for `/i18n`.
+`react` is an optional peer dependency, needed only for `/i18n` and
+`/install`. The app lock stays per-app until a second app needs one (#61).
 
 ## `storage`
 
@@ -124,6 +127,72 @@ registerAppWorker(self, {
   open tab never loses the chunks it already loaded.
 - **Bump `cacheName` whenever the shell changes.** It's the only way old
   caches get cleaned up.
+
+## `persisted`
+
+```ts
+import { createPersistedStore } from "@maat-apps/core/persisted";
+
+export const settings = createPersistedStore({
+  storage, // from createKeyValueStore
+  key: "my-app-settings",
+  defaults: { installed: false },
+  parse: (stored) => parseSettings(stored), // validate; throwing keeps defaults
+});
+
+settings.getSnapshot(); // synchronous; the defaults until loaded
+settings.set({ installed: true }); // merge, notify, persist in the background
+```
+
+The pattern from [`docs/storage.md`](../../docs/storage.md) as a store:
+`getSnapshot`/`getServerSnapshot`/`subscribe` for `useSyncExternalStore`,
+`set(patch)`, `reset()`, and a separate **ready** signal (`isReady`,
+`subscribeReady`) for anything that must not treat "not loaded yet" as "the
+defaults" — e.g. an app-lock gate.
+
+## `update`
+
+```ts
+import { createUpdateSnapshot, updateApp } from "@maat-apps/core/update";
+
+export const updateSnapshot = createUpdateSnapshot({
+  storage,
+  key: "my-app-update-snapshot",
+  backup: { create: createBackup, parse: parseBackupValue, apply: applyBackup },
+  encryption: { getKey: () => encryptionKey }, // only if the app encrypts
+});
+
+await updateApp(updateSnapshot); // Settings' "Update app"
+```
+
+- `updateApp` saves a snapshot, asks a waiting service worker to take over
+  (`SKIP_WAITING_MESSAGE` from `/sw`), deletes every cache and reloads; a
+  failing step never blocks the reload.
+- The snapshot is the app's own backup format, plugged in through the
+  `backup` adapter. `has`/`subscribe` drive a "Restore previous version" row;
+  `restore`, `read` and `discard` do what they say.
+- With `encryption`, the snapshot is stored encrypted like the rest of the
+  app's data.
+
+## `install`
+
+```ts
+import { createInstallPrompt } from "@maat-apps/core/install";
+
+export const useInstallPrompt = createInstallPrompt({
+  isInstalled: () => settings.getSnapshot().installed,
+  subscribe: settings.subscribe,
+  markInstalled: () => settings.set({ installed: true }),
+});
+
+const { state, install } = useInstallPrompt(); // "available" | "installed" | "unavailable"
+```
+
+Captures Chromium's `beforeinstallprompt` so a button can replay it, and
+reports `installed` when running standalone (incl. iOS), after
+`appinstalled`, or when the persisted flag says so — Chrome stops offering
+the prompt once installed, so the flag is the only record a plain browser
+tab has.
 
 ## Testing
 
