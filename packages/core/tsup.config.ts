@@ -2,6 +2,7 @@ import { defineConfig } from "tsup";
 
 export default defineConfig({
   entry: [
+    "src/backup.ts",
     "src/crypto.ts",
     "src/i18n.ts",
     "src/install.ts",
@@ -10,8 +11,9 @@ export default defineConfig({
     "src/storage.ts",
     "src/sw.ts",
     "src/update.ts",
+    "src/validation.ts",
   ],
-  external: ["react"],
+  external: ["react", "valibot"],
   format: ["esm"],
   dts: true,
   sourcemap: true,
