@@ -1,4 +1,3 @@
-import * as React from "react";
 import {
   DayPicker,
   type ClassNames,
@@ -7,6 +6,13 @@ import {
   type Matcher,
   type PropsBase,
 } from "@daypicker/react";
+import {
+  CalendarBlank as CalendarIcon,
+  CaretDown as ChevronDownIcon,
+  CaretLeft as ChevronLeftIcon,
+  CaretRight as ChevronRightIcon,
+  X as XIcon,
+} from "@phosphor-icons/react";
 import {
   addMonths,
   differenceInCalendarMonths,
@@ -20,19 +26,13 @@ import {
   subDays,
   subMonths,
 } from "date-fns";
-import {
-  CalendarBlank as CalendarIcon,
-  CaretDown as ChevronDownIcon,
-  CaretLeft as ChevronLeftIcon,
-  CaretRight as ChevronRightIcon,
-  X as XIcon,
-} from "@phosphor-icons/react";
+import * as React from "react";
 
 import { Button } from "./button";
+import { cn } from "./cn";
 import { Field, FieldLabel } from "./field";
 import { Input } from "./input";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
-import { cn } from "./cn";
 
 type PickerView = "days" | "months" | "years";
 
@@ -1096,6 +1096,8 @@ function CalendarSurface({
   const shellRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
+    // TODO(maat-core#51): derive instead of syncing state in an effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPanelViews((current) => {
       const entries = Object.entries(current).filter(
         ([displayIndex]) =>
@@ -1680,6 +1682,8 @@ export function DateRangePickerInput({
   }. ${endLabel}: ${formattedEnd || endPlaceholder}`;
 
   React.useEffect(() => {
+    // TODO(maat-core#51): derive instead of syncing state in an effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!open) setDraft(value);
   }, [open, value]);
 
