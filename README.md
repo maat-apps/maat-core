@@ -43,9 +43,12 @@ behind them exists here.
 - `npm run format` / `format:check` — Prettier, with `configs/prettier`'s
   shared options (minus Tailwind class sorting, which needs an app's own
   stylesheet — see `prettier.config.mjs`).
-- `npm run typecheck` / `build` — every workspace that defines them.
+- `npm run typecheck` / `test` / `build` — every workspace that defines
+  them. Tests are Vitest, under each package's `tests/`: `packages/ui`
+  (jsdom + Testing Library, behavior of the components with logic) and
+  `packages/create-maat-app` (runs the real CLI into a temp directory).
 
-CI (`.github/workflows/ci.yml`) runs all four on every PR.
+CI (`.github/workflows/ci.yml`) runs all of these on every PR.
 
 ## Packages
 

@@ -1,10 +1,9 @@
 name: CI
 
-# One job for now: lint, formatting, typecheck and package builds are all
-# cheap here. Unit tests join as their own step once the workspaces have
-# them. Every workspace's typecheck/build runs through
-# the root scripts' `--workspaces --if-present`, so a new package is
-# covered without editing this file.
+# One job: lint, formatting, typecheck, unit tests and package builds are
+# all cheap here. Every workspace's typecheck/test/build runs through the
+# root scripts' `--workspaces --if-present`, so a new package is covered
+# without editing this file.
 on:
   pull_request:
   workflow_dispatch:
@@ -40,6 +39,9 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
 
       - name: Build packages
         run: npm run build
