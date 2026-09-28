@@ -31,12 +31,13 @@ node packages/create-maat-app/bin/cli.mjs <app-name> [--desktop]
   `tsconfig.*.json`, `components.json` wired to use them) — copy, not
   install, since there's no published `@maat-apps/*` config package yet
   (see `../../configs/README.md`).
-- A `.claude/` tooling baseline: `/pr-description` and `/open-pr` commands
-  (both close a matching GitHub Issue automatically), the
+- A `.claude/` tooling baseline: the ecosystem's Claude Code standard from
+  [`configs/claude`](../../configs/claude) — `/open-pr` and
+  `/pr-description` (close a matching Issue, merge once CI is green) and
+  the Clean Code skills — plus the template's own hooks: the
   `session-validate.sh` Stop hook (typecheck every turn, unit tests only
-  when `src/`/`tests/` changed), and the `post-edit-format.mjs` PostToolUse
-  hook — the two concrete pieces routines' own workflow proved useful
-  enough to carry forward as-is.
+  when `src/`/`tests/` changed) and the `post-edit-format.mjs` PostToolUse
+  hook.
 - A minimal single-locale i18n store (`src/i18n/use-translation.ts` +
   `en.json`) following `STRUCTURE.md`'s pattern, and one starter view
   (`src/views/home/home-view.tsx`) wired into `src/app/router.tsx`.

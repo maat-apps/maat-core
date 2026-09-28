@@ -56,6 +56,16 @@ renameSync(
   path.join(targetDir, ".gitignore"),
 );
 renameSync(path.join(targetDir, "claude"), path.join(targetDir, ".claude"));
+// The ecosystem's Claude Code standard (PR commands, clean-code skills),
+// shared by every app; the template only adds the app's own hooks/settings.
+copyDir(
+  path.join(repoRoot, "configs", "claude", "commands"),
+  path.join(targetDir, ".claude", "commands"),
+);
+copyDir(
+  path.join(repoRoot, "configs", "claude", "skills"),
+  path.join(targetDir, ".claude", "skills"),
+);
 
 // 2. Mobile-only (default, matching routines) vs. desktop-capable.
 const mainSrc = desktop ? "main.tsx" : "main.mobile-gate.tsx";

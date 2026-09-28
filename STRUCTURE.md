@@ -165,6 +165,23 @@ changes once its PR has merged — cut a fresh one instead.
   [`docs/testing-e2e.md`](./docs/testing-e2e.md) (device projects, WebKit
   vs. CDP, axe and Lighthouse).
 
+## Claude Code workflow
+
+Every repo works the same way, from maat-core's
+[`configs/claude`](./configs/claude) (copied into each app's `.claude/`):
+
+- **PRs**: `/open-pr` pushes the branch and opens the PR with a generated
+  description (`/pr-description`) — no local re-verification, no
+  confirmation pause. **Merge once CI is green**: enable auto-merge where
+  the repo allows it, otherwise merge (squash) as soon as checks pass,
+  respecting a required order (stacked PRs, unmerged prerequisites). Red
+  checks get fixed, never merged. Every repo has CI, so there's always a
+  check to wait for.
+- **Clean code**: the Clean Code skills (`boy-scout` + the rule skills)
+  apply to TypeScript edits; the repo's own `CLAUDE.md` wins on conflicts.
+- One-time machine setup: install the `gh` CLI, then restart Claude Code
+  (a running app or shell doesn't see a `gh` installed after it started).
+
 ## Task tracking
 
 - Work items are **GitHub Issues**, not local files. Anything ecosystem-wide

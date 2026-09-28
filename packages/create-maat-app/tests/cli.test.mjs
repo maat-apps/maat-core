@@ -111,6 +111,18 @@ describe("create-maat-app", () => {
       ).toBe(false);
     });
 
+    it("installs the Claude Code standard from configs/claude", () => {
+      for (const file of [
+        path.join(".claude", "commands", "open-pr.md"),
+        path.join(".claude", "commands", "pr-description.md"),
+        path.join(".claude", "skills", "boy-scout", "SKILL.md"),
+        path.join(".claude", "skills", "clean-code-skills-LICENSE"),
+        path.join(".claude", "hooks", "session-validate.sh"),
+      ]) {
+        expect(existsSync(path.join(appDir, file)), file).toBe(true);
+      }
+    });
+
     it("links maat-core's shared docs instead of copying them", () => {
       expect(existsSync(path.join(appDir, "STRUCTURE.md"))).toBe(false);
       expect(existsSync(path.join(appDir, "VERIFICATION.md"))).toBe(false);
