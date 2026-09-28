@@ -23,9 +23,9 @@ node packages/create-maat-app/bin/cli.mjs <app-name> [--desktop]
 - The folder layout from [`STRUCTURE.md`](../../STRUCTURE.md): `src/app/`,
   `src/views/`, `src/components/`, `src/lib/`, `src/hooks/`, `src/i18n/`,
   `tests/unit/`, `e2e/`.
-- A starter `CLAUDE.md`/`AGENTS.md` linking to `STRUCTURE.md` and
-  [`VERIFICATION.md`](../../VERIFICATION.md) (both copied into the new repo
-  too, as a point-in-time snapshot for offline reference).
+- A starter `CLAUDE.md`/`AGENTS.md` and `README.md` linking to
+  maat-core's `STRUCTURE.md` and [`VERIFICATION.md`](../../VERIFICATION.md)
+  — linked, not copied, so the new repo never carries a stale snapshot.
 - `configs/eslint`, `configs/typescript`, `configs/shadcn` copied from this
   repo's own `configs/` (plus `.prettierrc.json`, `eslint.config.mjs`,
   `tsconfig.*.json`, `components.json` wired to use them) — copy, not
