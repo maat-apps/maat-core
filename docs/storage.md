@@ -3,15 +3,16 @@
 How a `maat-apps` app persists its data: IndexedDB as a write-through
 backing store behind a synchronous, in-memory source of truth. Documented
 from [`routines`](https://github.com/maat-apps/routines)' `src/lib/`, the
-reference implementation; this becomes `@maat-apps/core`'s own storage
-documentation once
-[maat-apps/maat-core#43](https://github.com/maat-apps/maat-core/issues/43)
-lands.
+reference implementation. The low-level pieces — the key-value store and
+the PRF encryption — ship as
+[`@maat-apps/core`](../packages/core) (`/storage`, `/crypto`); this page is
+the pattern an app builds on top of them.
 
 ## The pattern
 
-- **One database, one key-value object store**, behind a small hand-rolled
-  promise wrapper around raw IndexedDB (`idb-store.ts`) — no dependency.
+- **One database, one key-value object store**, behind a small promise
+  wrapper around raw IndexedDB — `createKeyValueStore({ name })` from
+  `@maat-apps/core/storage`, no other dependency.
 - **Each storage module keeps its data in a module-level variable**, which
   is the _real_ source of truth once loaded. IndexedDB is read once, in the
   background, at startup, and written to in the background on every
@@ -48,8 +49,9 @@ lands.
 
 Storage modules can expose `setEncryptionKey(key: CryptoKey | null)`. The
 key is AES-GCM, derived with HKDF-SHA256 from a WebAuthn credential's
-**PRF extension** output, only when the authenticator supports PRF;
-otherwise an app lock is a UI gate only, and the UI must say so.
+**PRF extension** output (`deriveKey` in `@maat-apps/core/crypto`), only
+when the authenticator supports PRF; otherwise an app lock is a UI gate
+only, and the UI must say so.
 
 - **The HKDF `info` string is part of the stored data format.** Changing it
   makes every already-encrypted record unreadable. Each app picks its own
