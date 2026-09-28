@@ -98,6 +98,15 @@ everything from one barrel for convenience.
 - `page-header.tsx` — the fixed, edge-to-edge sticky header shell any
   screen's own header (`AppBar` or otherwise) sits in.
 - `drag-handle.tsx` — the grab handle for a `@dnd-kit`-sortable row.
+- `sortable-list.tsx` — `SortableList` (a vertical drag-to-reorder list
+  that reports the new order as ids via `onReorder` and renders rows with
+  `renderItem`), `useSortableItem` (the wiring for a custom sortable row)
+  and `useDragSensors` (pointer/touch/keyboard, with a touch delay so a
+  swipe still scrolls), `SortableListRow` (a `ListRow`-style card with a
+  `DragHandle`) and `reorderIds` (the pure reorder step).
+- `list-row.tsx` — `ListRow`, a tappable card row for plain lists; needs
+  no `@dnd-kit`. In both row components the content is `children`, so
+  each app keeps its own.
 - `progress-ring.tsx` — a compact circular completed/total indicator.
 - `fab-button.tsx` / `reset-button.tsx` — floating action button and a
   secondary action button, sharing one sizing/shape convention.
@@ -120,7 +129,9 @@ the gate shape.
 - **Peer dependencies**: `react`, `react-dom` (^19), `@base-ui/react`
   (^1.8.0) — required, must be a single shared instance across the app, so
   they're peers rather than bundled. `@dnd-kit/sortable` is an optional
-  peer, only needed if you use `drag-handle.tsx`.
+  peer, only needed if you use `drag-handle.tsx`; `sortable-list.tsx` also
+  needs `@dnd-kit/core`, `@dnd-kit/modifiers` and `@dnd-kit/utilities`
+  (all optional peers).
   `class-variance-authority`, `clsx`, `tailwind-merge`, `date-fns`,
   `@daypicker/react`, `recharts`, and `@phosphor-icons/react` are regular
   dependencies of this package — you don't need to install them yourself.
