@@ -13,7 +13,6 @@ and the npm workspaces under `packages/`. See `README.md` for the map.
 | `packages/ui` → `@maat-apps/ui`     | Shared React components (shadcn `base-nova`)                |
 | `packages/core` → `@maat-apps/core` | Non-UI plumbing: storage, crypto, i18n, SW, update, install |
 | `packages/create-maat-app`          | Scaffolding CLI for a new app                               |
-| `packages/placeholder`              | Proved the publish loop; not used by apps                   |
 
 Consumers: `maat-apps/routines` and `maat-apps/trainer`. A change here is
 only half done until they use it — follow up with a PR in each app.

@@ -65,10 +65,7 @@ is CI-driven via
 Publishing (OIDC) — no stored token. Each publish stages a version; a
 maintainer with 2FA enabled promotes it live at npmjs.com (Access Tokens →
 Staged Packages) — a deliberate per-release human checkpoint, not an
-oversight. `packages/placeholder` proved the loop end-to-end (staged →
-promoted → `npm install`d → resolved correctly). `packages/ui` is the
-first real package built on that infrastructure — its very first version
-still needs one manual `npm publish` from a maintainer before the
-Trusted Publisher connection can even be registered (see its own README's
-"Publishing" section); `configs/` moving into an installable package is
-still todo.
+oversight. A brand-new package's very first version needs one manual
+`npm publish` from a maintainer before its Trusted Publisher connection
+can be registered; see `CLAUDE.md`'s "Releasing a package" for the full
+steps. `configs/` is still copied rather than installed.
