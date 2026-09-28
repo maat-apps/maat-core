@@ -31,6 +31,9 @@ behind them exists here.
   package (drawer, app bar, progress ring, and a few others), extracted
   from `routines`. See its own README for what's there, the setup a
   consuming app needs, and what's deliberately not extracted.
+- [`packages/core`](./packages/core) — `@maat-apps/core`, the non-React
+  browser plumbing apps share: an IndexedDB key-value store (`/storage`)
+  and WebAuthn PRF encryption (`/crypto`), extracted from `routines`.
 - [`packages/create-maat-app`](./packages/create-maat-app) — a CLI that
   scaffolds a new `maat-apps` repo matching routines' structure
   (`STRUCTURE.md`, shared configs, the `.claude/` tooling baseline). See
@@ -45,7 +48,8 @@ behind them exists here.
   stylesheet — see `prettier.config.mjs`).
 - `npm run typecheck` / `test` / `build` — every workspace that defines
   them. Tests are Vitest, under each package's `tests/`: `packages/ui`
-  (jsdom + Testing Library, behavior of the components with logic) and
+  (jsdom + Testing Library, behavior of the components with logic),
+  `packages/core` (Node, WebCrypto + `fake-indexeddb`) and
   `packages/create-maat-app` (runs the real CLI into a temp directory).
 
 CI (`.github/workflows/ci.yml`) runs all of these on every PR.
