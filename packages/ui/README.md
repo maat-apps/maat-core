@@ -70,13 +70,10 @@ everything from one barrel for convenience.
     already keys off of.
   - Ships with `date-picker.css` (import as `@maat-apps/ui/date-picker.css`)
     — a separate stylesheet, **not** imported by `date-picker.tsx` itself
-    (same posture as `progress-ring.tsx`'s keyframe below: this package
-    ships the styles, a consuming app opts in explicitly). It maps
-    `DayPicker`'s CSS custom properties onto this ecosystem's own design
-    tokens (`--background`, `--popover`, `--primary`, `--accent`,
-    `--border`, `--ring`, `--muted`, `--secondary`) unchanged — trainer's
-    and routines' `globals.css` already define all of them, being the same
-    Tailwind v4 / shadcn `base-nova` setup.
+    (this package ships the styles, a consuming app opts in explicitly).
+    It maps `DayPicker`'s CSS custom properties onto the tokens from
+    `theme.css` (`--background`, `--popover`, `--primary`, `--accent`,
+    `--border`, `--ring`, `--muted`, `--secondary`).
 - `settings-primitives.tsx` — `SettingsSection`/`SettingsRow`: a titled
   section + labeled-row pattern for any settings-style list, not just app
   settings.
@@ -135,37 +132,27 @@ the gate shape.
   `class-variance-authority`, `clsx`, `tailwind-merge`, `date-fns`,
   `@daypicker/react`, `recharts`, and `@phosphor-icons/react` are regular
   dependencies of this package — you don't need to install them yourself.
-- **Same `base-nova`/Tailwind v4 token setup as routines** (design tokens
-  themselves aren't included — see below); see
-  [`../../configs/shadcn`](../../configs/shadcn) for the shadcn config
-  side of that.
-- **Tailwind v4 must scan this package's compiled output**, or classes used
-  only inside these components get purged from your build. Add a `@source`
-  directive to your own Tailwind entry point (next to your other `@import`/
-  `@source` lines):
+- **The theme**: every Ma'at app looks the same — true black + white on
+  Outfit — so the tokens ship here. Your Tailwind entry CSS imports the
+  theme, scans this package's compiled output (or classes used only
+  inside these components get purged), and pulls in the date picker's
+  stylesheet if you use it:
   ```css
-  @source "../node_modules/@maat-apps/ui/dist";
+  @import "tailwindcss";
+  @import "@maat-apps/ui/theme.css";
+  @import "@maat-apps/ui/date-picker.css"; /* only with date-picker.tsx */
+  @source "../node_modules/@maat-apps/ui/dist"; /* relative to this file */
   ```
-  (path relative to wherever your Tailwind entry CSS file lives).
-- `progress-ring.tsx` assumes an `animate-progress-check-pop` Tailwind
-  animation exists in your own `globals.css` (routines defines it there) —
-  copy that keyframe if you use this component, or drop the class if you
-  don't need the pop-in animation.
-- `mobile-gate.tsx` assumes a `phone-sized:` custom Tailwind variant exists
-  in your `globals.css` (routines defines it as a viewport-width
-  `@custom-variant`) — copy that variant definition along with the
-  component.
-- `date-picker.tsx` needs its stylesheet imported explicitly — it isn't
-  pulled in automatically:
-  ```css
-  @import "@maat-apps/ui/date-picker.css";
-  ```
-  The stylesheet reads its colors from this ecosystem's existing design
-  tokens (`--background`, `--popover`, `--primary`, `--accent`, `--border`,
-  `--ring`, `--muted`, `--secondary`) — nothing new to define if your
-  `globals.css` already has the standard `base-nova` token set.
-- Design tokens (colors, true-black OLED background, etc.) are **not**
-  included — those are per-app product decisions, not shared defaults.
+  `theme.css` brings the Outfit font (`@fontsource-variable/outfit`, a
+  dependency of this package, self-hosted), the shadcn `base-nova` color/
+  radius/font tokens with a true-black background and white accent, base
+  styles, the `phone-sized:` variant `mobile-gate.tsx` needs and the
+  `animate-progress-check-pop` animation `progress-ring.tsx` uses. Don't
+  redefine these tokens per app; add only what's genuinely app-specific
+  (e.g. larger inputs) after the import. See
+  [`../../configs/shadcn`](../../configs/shadcn) for the shadcn config.
+- `date-picker.css` reads its colors from the same tokens, so nothing else
+  needs defining.
 
 ## Not extracted (on purpose) — the coupling audit's result
 
