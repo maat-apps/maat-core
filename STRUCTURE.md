@@ -10,6 +10,24 @@ file's own Architecture section for what's actually specific to that app
 
 See [maat-apps/maat-core#5](https://github.com/maat-apps/maat-core/issues/5).
 
+## Design principles
+
+Every app in the ecosystem is guided by these; keep them in mind when
+writing or reviewing code.
+
+- **Minimalism.** Prefer the simplest solution; avoid unnecessary
+  abstractions, UI complexity or dependencies.
+- **Independence.** Avoid vendor/cloud lock-in — don't reach for a backend
+  or third-party service where a local-first approach works.
+- **Smallest possible runtime footprint.** Keep bundles and components
+  lightweight to save battery and resources on the user's device — e.g.
+  prefer true black (`#000000`) backgrounds, which save power on OLED
+  screens. This is about the shipped app; the build/verify side of the
+  same principle is [`VERIFICATION.md`](./VERIFICATION.md).
+- **Ease of use.** Keep the app simple and predictable for the user.
+- **Accessibility.** Semantic markup, keyboard/screen-reader support,
+  sufficient contrast.
+
 ## Folder layout
 
 ```
@@ -78,10 +96,28 @@ e2e/            # Playwright specs + e2e/utils.ts
 - Hooks (`use*`) live in `src/hooks/`, not colocated in `src/lib/` —
   `lib/` must stay free of `react`/`react-dom` imports.
 - Extract a component or function into its own file once either (a) it's
-  used in more than two places, or (b) its containing file grows past
-  ~200 lines — whichever comes first, and not a mechanical gate: some
-  files earn their length; judge whether splitting actually improves
-  readability.
+  used in more than two places — including within a single file — or (b)
+  its containing file grows past ~200 lines, whichever comes first. Not a
+  mechanical gate: some files earn their length (a view made of many
+  short, cohesive JSX sections, a single-purpose `lib/` module); judge
+  whether splitting actually improves readability.
+- Validate anything crossing a trust boundary (backup imports, storage
+  read-back) with [Valibot](https://valibot.dev/) schemas, not hand-rolled
+  `typeof` checks — the ecosystem's standard validation library
+  ([maat-apps/maat-core#2](https://github.com/maat-apps/maat-core/issues/2)).
+  Infer types from the schemas (`v.InferOutput`), and validate
+  array/record entries one by one rather than handing the whole collection
+  to `v.array()`/`v.record()`, so one malformed entry doesn't sink an
+  otherwise-valid whole.
+- Avoid `as` assertions where TypeScript already infers the right type. A
+  cast should mean "I know something the compiler can't": narrowing
+  `unknown`/`any` at a trust boundary (`JSON.parse`, a loosely typed DOM or
+  IndexedDB API, a partial test mock) or a shape TS can't know (a
+  not-yet-typed API, a non-standard property like
+  `navigator.standalone`). If removing a cast still type-checks, it was
+  never doing anything.
+- Persist data with the local-first storage pattern in
+  [`docs/storage.md`](./docs/storage.md).
 
 ## Branch naming
 
@@ -107,3 +143,21 @@ changes once its PR has merged — cut a fresh one instead.
   production build, not the dev server.
 - Both split by what they actually exercise, not by mechanical coverage
   targets.
+- Details and known traps: [`docs/testing-unit.md`](./docs/testing-unit.md)
+  (coverage scope, `isolate: false`, fake IndexedDB, RTL cleanup) and
+  [`docs/testing-e2e.md`](./docs/testing-e2e.md) (device projects, WebKit
+  vs. CDP, axe and Lighthouse).
+
+## Task tracking
+
+- Work items are **GitHub Issues**, not local files. Anything ecosystem-wide
+  or belonging to another repo is also added to the org-level
+  [Ma'at Apps Roadmap](https://github.com/orgs/maat-apps/projects/1)
+  Project, which only holds real Issues/PRs — so every repo with tasks
+  needs Issues enabled (`gh repo edit <repo> --enable-issues`).
+- Where an Issue goes: an app's own work (features, bugs — a bug is just
+  the `bug` label) on that app's repo; ecosystem-wide work (shared config,
+  UI library, CI/testing standards, scaffolding) on
+  [`maat-apps/maat-core`](https://github.com/maat-apps/maat-core/issues).
+- Priority is the Project's `Priority` field (`Now`/`Next`/`Later`), set
+  and read with `gh project item-edit`/`item-list` — not a local file.

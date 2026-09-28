@@ -19,6 +19,12 @@ behind them exists here.
 - [`VERIFICATION.md`](./VERIFICATION.md) — the "verify each change exactly
   once" principle: eliminating redundant lint/test/build runs across
   local and CI is a bigger win than optimizing any single run.
+- [`docs/`](./docs) — the detail behind STRUCTURE.md's short rules:
+  [`storage.md`](./docs/storage.md) (the local-first IndexedDB pattern,
+  optional WebAuthn PRF encryption),
+  [`testing-unit.md`](./docs/testing-unit.md) and
+  [`testing-e2e.md`](./docs/testing-e2e.md) (Vitest/Playwright conventions
+  and known traps).
 - [`configs/`](./configs) — shared ESLint, Prettier, and base TypeScript
   config, extracted from `routines`. See its own README for how to use them.
 - [`packages/ui`](./packages/ui) — the real, installable `@maat-apps/ui`

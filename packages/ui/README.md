@@ -77,9 +77,17 @@ everything from one barrel for convenience.
 - `settings-primitives.tsx` — `SettingsSection`/`SettingsRow`: a titled
   section + labeled-row pattern for any settings-style list, not just app
   settings.
-- `drawer.tsx` — the Base UI `Drawer` wrapper with swipe-to-dismiss and
-  `useHistoryBackDismiss` (closes on the phone's native back gesture on iOS
-  and any browser without `CloseWatcher`).
+- `drawer.tsx` — the Base UI `Drawer` wrapper. With `showSwipeHandle` it
+  shows a grab pill and can be swiped down to dismiss; nested drawers stack
+  (the parent shrinks and scales behind the child, which is intended).
+  Every drawer also closes on the phone's native back button/gesture: on
+  Android/Chromium via Base UI's own `CloseWatcher` (topmost drawer only),
+  elsewhere (iOS, any browser without `CloseWatcher`) via
+  `useHistoryBackDismiss` — one marker-tagged `pushState` per open drawer,
+  closed on `popstate`, so nested drawers close topmost-first. Routed
+  screens need no equivalent, since `navigate(...)` already creates a real
+  history entry. The swipe reacts to touch only: e2e tests need CDP
+  `Input.dispatchTouchEvent`, synthetic mouse drags don't dismiss it.
 - `confirm-drawer.tsx` — a destructive-action confirmation bottom sheet
   built on `drawer.tsx`.
 - `app-bar.tsx` — back-button + title + optional action header, built on
