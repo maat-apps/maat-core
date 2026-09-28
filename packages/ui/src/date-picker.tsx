@@ -1095,18 +1095,27 @@ function CalendarSurface({
   >({});
   const shellRef = React.useRef<HTMLDivElement>(null);
 
-  React.useEffect(() => {
-    // TODO(maat-core#51): derive instead of syncing state in an effect.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPanelViews((current) => {
-      const entries = Object.entries(current).filter(
-        ([displayIndex]) =>
-          enableYearMonthPicker && Number(displayIndex) < monthCount,
-      );
-      if (entries.length === Object.keys(current).length) return current;
-      return Object.fromEntries(entries);
-    });
-  }, [enableYearMonthPicker, monthCount]);
+  // Drop panel views that no longer apply (picker disabled, or fewer months
+  // shown). Adjusted during render rather than in an effect, so a stale
+  // year/month view is never painted first.
+  const [panelViewsPrunedFor, setPanelViewsPrunedFor] = React.useState({
+    enableYearMonthPicker,
+    monthCount,
+  });
+  if (
+    panelViewsPrunedFor.enableYearMonthPicker !== enableYearMonthPicker ||
+    panelViewsPrunedFor.monthCount !== monthCount
+  ) {
+    setPanelViewsPrunedFor({ enableYearMonthPicker, monthCount });
+    setPanelViews((current) =>
+      Object.fromEntries(
+        Object.entries(current).filter(
+          ([displayIndex]) =>
+            enableYearMonthPicker && Number(displayIndex) < monthCount,
+        ),
+      ),
+    );
+  }
 
   const displayMonth = normalizeVisibleMonth(
     (isValidDate(controlledMonth) && controlledMonth) || internalMonth,
@@ -1665,6 +1674,15 @@ export function DateRangePickerInput({
     defaultOpen,
     onOpenChange,
   );
+  // While closed, the draft follows the value, so opening through the
+  // controlled `open` prop (which skips handleOpenChange) starts from the
+  // latest value. Adjusted during render rather than in an effect, so it
+  // never costs an extra render pass.
+  const [draftSyncedTo, setDraftSyncedTo] = React.useState({ open, value });
+  if (draftSyncedTo.open !== open || draftSyncedTo.value !== value) {
+    setDraftSyncedTo({ open, value });
+    if (!open) setDraft(value);
+  }
   const controlId = React.useId();
   const displayedRange = open ? draft : value;
   const formattedRange = formatDateRangeValue(displayedRange, {
@@ -1680,12 +1698,6 @@ export function DateRangePickerInput({
   const triggerAriaLabel = `${label || "Date range"}. ${startLabel}: ${
     formattedStart || startPlaceholder
   }. ${endLabel}: ${formattedEnd || endPlaceholder}`;
-
-  React.useEffect(() => {
-    // TODO(maat-core#51): derive instead of syncing state in an effect.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (!open) setDraft(value);
-  }, [open, value]);
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (nextOpen) setDraft(value);
