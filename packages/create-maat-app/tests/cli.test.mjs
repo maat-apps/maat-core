@@ -98,12 +98,10 @@ describe("create-maat-app", () => {
       ).toBe(true);
     });
 
-    it("copies the shared configs and reference docs", () => {
+    it("copies the shared configs", () => {
       for (const file of [
         ".prettierrc.json",
         "components.json",
-        "STRUCTURE.md",
-        "VERIFICATION.md",
         path.join("configs", "eslint", "base.mjs"),
       ]) {
         expect(existsSync(path.join(appDir, file)), file).toBe(true);
@@ -111,6 +109,14 @@ describe("create-maat-app", () => {
       expect(
         existsSync(path.join(appDir, "playwright.config.desktop.ts")),
       ).toBe(false);
+    });
+
+    it("links maat-core's shared docs instead of copying them", () => {
+      expect(existsSync(path.join(appDir, "STRUCTURE.md"))).toBe(false);
+      expect(existsSync(path.join(appDir, "VERIFICATION.md"))).toBe(false);
+      expect(read(appDir, "README.md")).toContain(
+        "https://github.com/maat-apps/maat-core/blob/main/STRUCTURE.md",
+      );
     });
 
     it("writes the app's package.json and CLAUDE.md", () => {

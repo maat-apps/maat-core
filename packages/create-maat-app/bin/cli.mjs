@@ -100,17 +100,8 @@ copyFileSync(
   path.join(targetDir, "components.json"),
 );
 
-// 4. Reference docs, snapshotted at generation time.
-copyFileSync(
-  path.join(repoRoot, "STRUCTURE.md"),
-  path.join(targetDir, "STRUCTURE.md"),
-);
-copyFileSync(
-  path.join(repoRoot, "VERIFICATION.md"),
-  path.join(targetDir, "VERIFICATION.md"),
-);
-
-// 5. Parameterized files.
+// 4. Parameterized files. STRUCTURE.md/VERIFICATION.md are linked, not
+// copied: a generation-time snapshot drifts from maat-core immediately.
 writeFileSync(
   path.join(targetDir, "package.json"),
   JSON.stringify(buildPackageJson(appName, desktop), null, 2) + "\n",
@@ -149,7 +140,7 @@ replaceTokens(path.join(targetDir, "CLAUDE.md"), {
 });
 writeFileSync(
   path.join(targetDir, "README.md"),
-  `# ${appName}\n\nScaffolded with \`@maat-apps/create-maat-app\`. See [CLAUDE.md](./CLAUDE.md) and [STRUCTURE.md](./STRUCTURE.md).\n`,
+  `# ${appName}\n\nScaffolded with \`@maat-apps/create-maat-app\`. See [CLAUDE.md](./CLAUDE.md), and maat-core's [STRUCTURE.md](https://github.com/maat-apps/maat-core/blob/main/STRUCTURE.md) and [VERIFICATION.md](https://github.com/maat-apps/maat-core/blob/main/VERIFICATION.md) for the conventions shared by every maat app.\n`,
 );
 
 console.log(`Created ${appName} at ${targetDir}`);
