@@ -122,6 +122,25 @@ replaceTokens(path.join(targetDir, "vite.config.ts"), {
 replaceTokens(path.join(targetDir, "playwright.config.ts"), {
   "{{APP_NAME}}": appName,
 });
+replaceTokens(path.join(targetDir, "public", "manifest.json"), {
+  "{{APP_NAME}}": appName,
+});
+replaceTokens(path.join(targetDir, "src", "sw.ts"), {
+  "{{APP_NAME}}": appName,
+});
+replaceTokens(
+  path.join(targetDir, "src", "app", "register-service-worker.ts"),
+  { "{{APP_NAME}}": appName },
+);
+replaceTokens(path.join(targetDir, "src", "lib", "idb-store.ts"), {
+  "{{APP_NAME}}": appName,
+});
+replaceTokens(path.join(targetDir, "src", "lib", "storage-keys.ts"), {
+  "{{APP_NAME}}": appName,
+});
+replaceTokens(path.join(targetDir, "tests", "unit", "reset-indexeddb.ts"), {
+  "{{APP_NAME}}": appName,
+});
 replaceTokens(path.join(targetDir, "CLAUDE.md"), {
   "{{APP_NAME}}": appName,
   "{{MOBILE_LINE}}": desktop

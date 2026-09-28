@@ -1,7 +1,12 @@
-/** The generated repo's package.json — a trimmed, PWA-free baseline vs.
- * routines' own (no service worker, no @dnd-kit, no IndexedDB storage —
- * see maat-core/STRUCTURE.md for what's actually generic vs. routines-
- * specific). Add those back per-app once needed. */
+/** The generated repo's package.json — a trimmed baseline vs. routines' own
+ * (no @dnd-kit, no reactive AppData store — see maat-core/STRUCTURE.md for
+ * what's actually generic vs. routines-specific). Add those back per-app
+ * once needed. PWA/service-worker support and the manual update mechanism
+ * (vite-plugin-pwa, src/sw.ts, src/lib/app-update.ts, src/hooks/
+ * use-install-prompt.ts) *are* part of the generic baseline (a deliberate
+ * reversal of an earlier decision to exclude them) — every app gets an
+ * installable, offline-capable shell and a way to force-update it out of
+ * the box. */
 export function buildPackageJson(appName, desktop = false) {
   const e2eProjects = desktop
     ? ["desktop-chromium", "desktop-webkit"]
@@ -54,6 +59,7 @@ export function buildPackageJson(appName, desktop = false) {
       "eslint-plugin-prettier": "^5",
       "eslint-plugin-react-hooks": "^7",
       "eslint-plugin-react-refresh": "^0.4",
+      "fake-indexeddb": "^6.2.5",
       globals: "^16",
       jsdom: "^30",
       prettier: "^3",
@@ -63,6 +69,7 @@ export function buildPackageJson(appName, desktop = false) {
       typescript: "^5",
       "typescript-eslint": "^8",
       vite: "^7",
+      "vite-plugin-pwa": "^1.1.0",
       vitest: "^5",
     },
   };

@@ -40,13 +40,32 @@ node packages/create-maat-app/bin/cli.mjs <app-name> [--desktop]
 - A minimal single-locale i18n store (`src/i18n/use-translation.ts` +
   `en.json`) following `STRUCTURE.md`'s pattern, and one starter view
   (`src/views/home/home-view.tsx`) wired into `src/app/router.tsx`.
+- A working PWA shell and manual force-update mechanism, every app's
+  default rather than something bolted on later: `vite-plugin-pwa`
+  (`injectManifest` strategy) + a hand-rolled `src/sw.ts` that deliberately
+  never calls `skipWaiting()` on install, `public/manifest.json` +
+  `public/icon.svg` (a brand-neutral placeholder — replace with the app's
+  own mark), `src/lib/app-update.ts` (tells a waiting worker to take over,
+  clears every cache, reloads), `src/hooks/use-install-prompt.ts` +
+  `src/lib/app-settings.ts` (install-prompt handling, including the
+  persisted "installed" flag Chrome needs), and a small `src/lib/
+idb-store.ts` KV wrapper those two lean on. `home-view.tsx` wires up
+  bare Install/Update buttons as a placeholder — move them into a real
+  Settings screen once the app has one (see trainer's or routines' own
+  `settings-app-section.tsx` for that pattern), and extend
+  `app-update.ts` with a snapshot/restore step once the app has its own
+  local data worth backing up before an update.
 
 ## What it deliberately doesn't include
 
-Routines-specific pieces that aren't part of the generic structure: the
-service worker/PWA setup, IndexedDB-backed storage, `@dnd-kit`, and the
-second `pl` locale catalog. Add these per-app once actually needed — see
-`STRUCTURE.md`'s own scope note on what's generic vs. app-specific.
+Routines-specific pieces that aren't part of the generic structure: a
+reactive, IndexedDB-backed app-data store (`storage.ts`'s
+`getDataSnapshot()`/`subscribe()` pattern — routines' own version, and
+trainer's, both build on the same `idb-store.ts` this scaffold already
+ships), `@dnd-kit`, and the second `pl` locale catalog. Add these per-app
+once actually needed — see `STRUCTURE.md`'s own scope note on what's
+generic vs. app-specific. (PWA/service-worker support _used_ to be on this
+list too — see `package-json.mjs`'s own comment for why that changed.)
 
 ## Verifying a change to this generator
 
