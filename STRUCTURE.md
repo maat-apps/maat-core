@@ -133,6 +133,17 @@ or changes (`feat/bottom-navigation`, `fix/vite-config-lint-error`,
 name. One branch per PR/task; don't reuse a branch name across unrelated
 changes once its PR has merged — cut a fresh one instead.
 
+## Versioning
+
+- **Apps don't bump their version.** Every app's `package.json` is
+  `1.0.0` and stays there: an app ships by deploying `main`, nothing
+  consumes its version, and per-PR bumps were only churn.
+  `create-maat-app` generates `1.0.0`.
+- **maat-core's published packages do** (`@maat-apps/ui`,
+  `@maat-apps/core`, …): semver, bumped in the same PR as the change —
+  apps depend on those numbers. See maat-core's `CLAUDE.md` for the
+  release steps.
+
 ## Testing
 
 - **Unit (Vitest)**: `tests/unit/`, mirroring `src/`'s structure rather

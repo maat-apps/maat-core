@@ -6,6 +6,10 @@ describe("buildPackageJson", () => {
     expect(buildPackageJson("diet").name).toBe("diet");
   });
 
+  it("starts every app at 1.0.0, which it keeps (see STRUCTURE.md's Versioning)", () => {
+    expect(buildPackageJson("diet").version).toBe("1.0.0");
+  });
+
   it("runs the mobile e2e projects by default", () => {
     expect(buildPackageJson("diet").scripts["test:e2e"]).toBe(
       "playwright test --project=mobile-chromium --project=mobile-iphone",
