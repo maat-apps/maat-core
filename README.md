@@ -36,6 +36,20 @@ behind them exists here.
   (`STRUCTURE.md`, shared configs, the `.claude/` tooling baseline). See
   its own README for usage.
 
+## Development
+
+- `npm run lint` / `lint:fix` — ESLint, using this repo's own shared base
+  (`configs/eslint/base.mjs`) so changes to it are exercised here first.
+- `npm run format` / `format:check` — Prettier, with `configs/prettier`'s
+  shared options (minus Tailwind class sorting, which needs an app's own
+  stylesheet — see `prettier.config.mjs`).
+- `npm run typecheck` / `test` / `build` — every workspace that defines
+  them. Tests are Vitest, under each package's `tests/`: `packages/ui`
+  (jsdom + Testing Library, behavior of the components with logic) and
+  `packages/create-maat-app` (runs the real CLI into a temp directory).
+
+CI (`.github/workflows/ci.yml`) runs all of these on every PR.
+
 ## Packages
 
 `packages/*` is an npm workspaces monorepo publishing scoped

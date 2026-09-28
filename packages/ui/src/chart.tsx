@@ -1,7 +1,7 @@
 import * as React from "react";
-import { cn } from "./cn";
-import * as RechartsPrimitive from "recharts";
 import type { TooltipValueType } from "recharts";
+import * as RechartsPrimitive from "recharts";
+import { cn } from "./cn";
 
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: "", dark: ".dark" } as const;
@@ -363,9 +363,9 @@ function getPayloadConfigFromPayload(
 
 export {
   ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
   ChartLegend,
   ChartLegendContent,
   ChartStyle,
+  ChartTooltip,
+  ChartTooltipContent,
 };

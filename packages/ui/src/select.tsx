@@ -1,6 +1,9 @@
-import { cn } from "./cn";
 import { Select as SelectPrimitive } from "@base-ui/react/select";
-import { Check as CheckIcon, CaretDown as ChevronDownIcon } from "@phosphor-icons/react";
+import {
+  Check as CheckIcon,
+  CaretDown as ChevronDownIcon,
+} from "@phosphor-icons/react";
+import { cn } from "./cn";
 
 function Select({ ...props }: SelectPrimitive.Root.Props<string>) {
   return <SelectPrimitive.Root data-slot="select" {...props} />;
