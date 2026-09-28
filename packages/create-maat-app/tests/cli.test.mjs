@@ -123,6 +123,20 @@ describe("create-maat-app", () => {
       }
     });
 
+    it("sets up CI/CD as calls to maat-core's reusable workflows", () => {
+      const ci = read(appDir, ".github", "workflows", "ci.yml");
+
+      expect(ci).toContain(
+        "uses: maat-apps/maat-core/.github/workflows/app-ci.yml@main",
+      );
+      for (const name of ["cd", "deploy-preview", "pr-preview-cleanup"]) {
+        expect(
+          existsSync(path.join(appDir, ".github", "workflows", `${name}.yml`)),
+          name,
+        ).toBe(true);
+      }
+    });
+
     it("links maat-core's shared docs instead of copying them", () => {
       expect(existsSync(path.join(appDir, "STRUCTURE.md"))).toBe(false);
       expect(existsSync(path.join(appDir, "VERIFICATION.md"))).toBe(false);

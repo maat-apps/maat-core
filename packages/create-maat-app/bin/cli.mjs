@@ -66,6 +66,12 @@ copyDir(
   path.join(repoRoot, "configs", "claude", "skills"),
   path.join(targetDir, ".claude", "skills"),
 );
+// CI/CD: small calling workflows; the pipelines themselves are maat-core's
+// reusable workflows, so a fix there reaches every app.
+copyDir(
+  path.join(repoRoot, "configs", "workflows"),
+  path.join(targetDir, ".github", "workflows"),
+);
 
 // 2. Mobile-only (default, matching routines) vs. desktop-capable.
 const mainSrc = desktop ? "main.tsx" : "main.mobile-gate.tsx";

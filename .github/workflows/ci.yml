@@ -45,3 +45,7 @@ jobs:
 
       - name: Build packages
         run: npm run build
+
+      # Same bar as the apps' CI (app-ci.yml): high and above only.
+      - name: Audit
+        run: npm audit --audit-level=high
