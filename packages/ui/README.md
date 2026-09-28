@@ -24,6 +24,9 @@ everything from one barrel for convenience.
   `outline` variant's `disabled:bg-background/40 disabled:backdrop-blur-md`
   treatment.
 - `input.tsx` — the shadcn `Input` (text input).
+- `textarea.tsx` — the shadcn `Textarea`.
+- `checkbox.tsx` — the shadcn `Checkbox` (round, Phosphor check icon).
+- `switch.tsx` — the shadcn `Switch` (`size`: `default` or `sm`).
 - `select.tsx` — the shadcn `Select` family (`Select`, `SelectTrigger`,
   `SelectContent`, `SelectItem`, `SelectValue`).
 - `field.tsx` — the shadcn/baseui-cn `Field` family (`Field`, `FieldLabel`,
