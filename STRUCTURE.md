@@ -65,8 +65,11 @@ e2e/            # Playwright specs + e2e/utils.ts
   `src/components/ui/` — generated, not hand-edited (see
   [`configs/shadcn`](./configs/shadcn) for the config choice and any
   post-generation patches to re-apply).
-- Tailwind, with design tokens as CSS variables — colors and other brand
-  decisions are per-app, not part of this shared structure.
+- Tailwind v4, with design tokens as CSS variables — **the same for every
+  app**: true black + white on Outfit, shipped as `@maat-apps/ui/theme.css`
+  and imported right after Tailwind. Apps don't redefine the tokens or pick
+  another typeface or accent color; they only add genuinely app-specific
+  styles on top.
 - Always import through the aliases `components.json` declares (`utils`,
   `ui`, `components`, `lib`, `hooks`) rather than straight from an
   underlying package, so a future `npx shadcn add` or hand-adjustment
