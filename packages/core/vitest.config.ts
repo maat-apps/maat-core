@@ -5,6 +5,6 @@ export default defineConfig({
     // Node already has WebCrypto, atob/btoa; IndexedDB comes from
     // fake-indexeddb, installed per test file that needs it.
     environment: "node",
-    include: ["tests/**/*.test.ts"],
+    include: ["tests/**/*.test.{ts,tsx}"],
   },
 });

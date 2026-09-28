@@ -4,12 +4,15 @@ Browser-platform plumbing shared by `maat-apps` apps — no React, no UI
 (components live in [`@maat-apps/ui`](../ui)). One package, one subpath per
 concern, so an app's bundle only contains what it imports.
 
-| Import                    | What                                         |
-| ------------------------- | -------------------------------------------- |
-| `@maat-apps/core/storage` | IndexedDB key-value store                    |
-| `@maat-apps/core/crypto`  | WebAuthn PRF → AES-GCM encryption, base64url |
+| Import                    | What                                          |
+| ------------------------- | --------------------------------------------- |
+| `@maat-apps/core/storage` | IndexedDB key-value store                     |
+| `@maat-apps/core/crypto`  | WebAuthn PRF → AES-GCM encryption, base64url  |
+| `@maat-apps/core/locale`  | Persisted locale store with device detection  |
+| `@maat-apps/core/i18n`    | `useTranslation` hook (the only React import) |
 
-Planned: `/i18n` (#44), `/sw` (#45), later `/lock`, `/update` (#46).
+Planned: `/sw` (#45), later `/lock`, `/update` (#46). `react` is an
+optional peer dependency, needed only for `/i18n`.
 
 ## `storage`
 
@@ -56,6 +59,38 @@ const back = await decryptJson<typeof data>(key, blob);
   encrypted value from plain data.
 - `randomBytes`, `toBase64Url`, `fromBase64Url`: the helpers a WebAuthn
   enrol/verify ceremony needs (challenges, storing credential ids).
+
+## `locale` + `i18n`
+
+```ts
+// src/lib/locale-store.ts — React-free, usable from plain code too
+import { createLocaleStore } from "@maat-apps/core/locale";
+export const localeStore = createLocaleStore({
+  locales: ["en", "pl"] as const,
+  fallbackLocale: "en",
+  storage: store, // from createKeyValueStore
+  storageKey: "my-app-locale",
+});
+
+// src/i18n/use-translation.ts
+import { createTranslation } from "@maat-apps/core/i18n";
+import en from "./en.json";
+import pl from "./pl.json";
+export const useTranslation = createTranslation(localeStore, { en, pl });
+
+// in a component
+const { t, locale, setLocale } = useTranslation();
+t("greeting", { name: "Ana" }); // "Hello, {name}!" → "Hello, Ana!"
+```
+
+- First launch: the locale whose code the device language starts with
+  (`"pl-PL"` → `"pl"`), else `fallbackLocale`; that guess is persisted, and
+  from then on the stored choice always wins.
+- No provider: the store is a singleton read through
+  `useSyncExternalStore`.
+- `t()` only accepts keys present in _every_ catalog, so a key missing
+  from one language fails to compile. Unknown `{placeholders}` are left
+  as-is.
 
 ## Testing
 

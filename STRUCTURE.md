@@ -86,6 +86,9 @@ e2e/            # Playwright specs + e2e/utils.ts
 - Message catalogs as flat JSON files (one per locale), kept in sync by
   hand — small enough per app that a library's tooling isn't worth the
   dependency.
+- The store and hook come from `@maat-apps/core` (`/locale`, `/i18n`); the
+  app keeps only its catalogs, locale list and storage key — see
+  [its README](./packages/core/README.md).
 
 ## Conventions
 
