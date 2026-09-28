@@ -25,7 +25,7 @@ on:
   workflow_dispatch:
     inputs:
       package:
-        description: "Workspace package directory name under packages/ (e.g. placeholder, ui)"
+        description: "Workspace package directory name under packages/ (e.g. ui, core)"
         required: true
         type: string
 
@@ -46,9 +46,9 @@ jobs:
 
       - run: npm ci
 
-      # --if-present: most packages here (e.g. placeholder) have no build
-      # step; ones that do (e.g. a future @maat-apps/ui) declare their own
-      # "build" script and this picks it up without a workflow change.
+      # --if-present: a package without a "build" script (e.g.
+      # create-maat-app) skips this step; ones with one (ui, core) build here
+      # without a workflow change.
       - run: npm run build --workspace "packages/${{ inputs.package }}" --if-present
 
       - run: npm stage publish --workspace "packages/${{ inputs.package }}" --access public
