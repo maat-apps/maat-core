@@ -1,7 +1,7 @@
 {
   "name": "@maat-apps/core",
   "version": "0.1.0",
-  "description": "Browser-platform plumbing shared by maat-apps apps: IndexedDB key-value storage and WebAuthn PRF encryption. No React.",
+  "description": "Browser-platform plumbing shared by maat-apps apps: IndexedDB key-value storage, WebAuthn PRF encryption and i18n. Only /i18n uses React.",
   "type": "module",
   "license": "MIT",
   "files": [
@@ -13,6 +13,14 @@
       "types": "./dist/crypto.d.ts",
       "import": "./dist/crypto.js"
     },
+    "./i18n": {
+      "types": "./dist/i18n.d.ts",
+      "import": "./dist/i18n.js"
+    },
+    "./locale": {
+      "types": "./dist/locale.d.ts",
+      "import": "./dist/locale.js"
+    },
     "./storage": {
       "types": "./dist/storage.d.ts",
       "import": "./dist/storage.js"
@@ -23,8 +31,18 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
+  "peerDependencies": {
+    "react": "^19"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "@types/react": "^19",
     "fake-indexeddb": "^6.2.5",
+    "react": "^19",
     "tsup": "^8",
     "typescript": "^5"
   },
