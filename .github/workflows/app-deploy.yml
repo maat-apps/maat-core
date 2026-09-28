@@ -1,0 +1,99 @@
+name: App deploy
+
+# Reusable GitHub Pages deploy of `main` for every maat app. The site is
+# served from a `pages-content` branch that holds main's build at the root
+# plus one `pr-<n>/` subdirectory per open PR preview (app-deploy-preview.yml,
+# app-pr-preview-cleanup.yml) — so deploying main must keep those
+# subdirectories rather than replace the whole site.
+#
+# An app calls it from its own .github/workflows/cd.yml, which keeps the
+# triggers (push to main with path filters on what reaches dist/), the
+# permissions (contents/pages: write, id-token: write) and the `pages`
+# concurrency group (cancel-in-progress: false — never cancel a live deploy):
+#
+#   jobs:
+#     deploy:
+#       uses: maat-apps/maat-core/.github/workflows/app-deploy.yml@main
+on:
+  workflow_call:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Vite build
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/node_modules/.vite
+          key: vite-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.[jt]s', '**/*.[jt]sx', '**/*.css') }}
+          restore-keys: |
+            vite-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
+
+      - name: Build
+        run: npm run build
+
+      - name: Checkout pages-content workspace
+        uses: actions/checkout@v5
+        with:
+          path: pages-content
+          fetch-depth: 0
+
+      - name: Switch to pages-content branch (create if missing)
+        working-directory: pages-content
+        run: |
+          git fetch origin pages-content:refs/remotes/origin/pages-content || true
+          if git show-ref --verify --quiet refs/remotes/origin/pages-content; then
+            git checkout pages-content
+          else
+            git checkout --orphan pages-content
+            git rm -rf . > /dev/null
+          fi
+
+      # Replace main's files, keep every pr-<n>/ preview.
+      - name: Sync main build into pages-content root
+        run: rsync -a --delete --exclude 'pr-*' --exclude '.git' dist/ pages-content/
+
+      - name: Commit and push pages-content
+        working-directory: pages-content
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Deploy main (${{ github.sha }})" --allow-empty
+          git push origin HEAD:pages-content
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v6
+        with:
+          enablement: true
+
+      - name: Remove git metadata before upload
+        run: rm -rf pages-content/.git
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages-content
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

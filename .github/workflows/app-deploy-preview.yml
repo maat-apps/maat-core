@@ -1,0 +1,127 @@
+name: App PR preview
+
+# Reusable: builds a PR under /<repo>/pr-<n>/ and publishes it next to
+# main's deployment on the shared `pages-content` branch (see
+# app-deploy.yml), then adds the preview link to the PR description.
+#
+# An app calls it from its own .github/workflows/deploy-preview.yml,
+# manually dispatched with the PR number (previews cost CI minutes, so
+# they're on demand, not per push), with permissions contents/pages/
+# pull-requests: write + id-token: write and the `pages` concurrency group:
+#
+#   on:
+#     workflow_dispatch:
+#       inputs:
+#         pr_number: { description: "PR number", required: true, type: number }
+#   jobs:
+#     preview:
+#       uses: maat-apps/maat-core/.github/workflows/app-deploy-preview.yml@main
+#       with:
+#         pr-number: ${{ inputs.pr_number }}
+on:
+  workflow_call:
+    inputs:
+      pr-number:
+        description: "PR to build and deploy a preview for"
+        type: number
+        required: true
+
+jobs:
+  preview-build:
+    runs-on: ubuntu-latest
+    env:
+      PR_NUM: ${{ inputs.pr-number }}
+      APP: ${{ github.event.repository.name }}
+    steps:
+      - name: Resolve PR head ref
+        id: pr_ref
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          REF=$(gh pr view "$PR_NUM" --repo "${{ github.repository }}" --json headRefName -q .headRefName)
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout PR head
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.pr_ref.outputs.ref }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build preview
+        run: npm run build
+        env:
+          DEPLOY_BASE_PATH: /${{ env.APP }}/pr-${{ env.PR_NUM }}/
+
+      - name: Checkout pages-content workspace
+        uses: actions/checkout@v5
+        with:
+          path: pages-content
+          fetch-depth: 0
+
+      - name: Switch to pages-content branch (create if missing)
+        working-directory: pages-content
+        run: |
+          git fetch origin pages-content:refs/remotes/origin/pages-content || true
+          if git show-ref --verify --quiet refs/remotes/origin/pages-content; then
+            git checkout pages-content
+          else
+            git checkout --orphan pages-content
+            git rm -rf . > /dev/null
+          fi
+
+      - name: Update this PR's preview subdirectory
+        run: |
+          rm -rf "pages-content/pr-$PR_NUM"
+          mkdir -p "pages-content/pr-$PR_NUM"
+          rsync -a dist/ "pages-content/pr-$PR_NUM/"
+
+      - name: Commit and push pages-content
+        working-directory: pages-content
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Preview for PR #$PR_NUM" --allow-empty
+          git push origin HEAD:pages-content
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v6
+        with:
+          enablement: true
+
+      - name: Remove git metadata before upload
+        run: rm -rf pages-content/.git
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages-content
+
+      - name: Add preview link to PR description
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PREVIEW_URL="https://${{ github.repository_owner }}.github.io/$APP/pr-$PR_NUM/"
+          BODY=$(gh pr view "$PR_NUM" --repo "${{ github.repository }}" --json body -q .body)
+          if ! printf '%s' "$BODY" | grep -qF "$PREVIEW_URL"; then
+            { printf '%s\n\n**Preview:** %s\n' "$BODY" "$PREVIEW_URL"; } | gh pr edit "$PR_NUM" --repo "${{ github.repository }}" --body-file -
+          fi
+
+  preview-deploy:
+    needs: preview-build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages-preview
+      url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-${{ inputs.pr-number }}/
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

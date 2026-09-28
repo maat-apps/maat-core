@@ -165,6 +165,32 @@ changes once its PR has merged — cut a fresh one instead.
   [`docs/testing-e2e.md`](./docs/testing-e2e.md) (device projects, WebKit
   vs. CDP, axe and Lighthouse).
 
+## CI/CD
+
+- **The pipelines live in maat-core** as reusable workflows
+  (`.github/workflows/app-ci.yml`, `app-deploy.yml`,
+  `app-deploy-preview.yml`, `app-pr-preview-cleanup.yml`). An app's
+  `.github/workflows/` only holds small callers from
+  [`configs/workflows`](./configs/workflows) —
+  `uses: maat-apps/maat-core/.github/workflows/app-ci.yml@main` plus its
+  own triggers, permissions and concurrency. A CI fix lands once for every
+  app.
+- **CI** (on PRs): code-quality → test (unit + coverage, e2e) →
+  build-and-audit (`npm audit --audit-level=high`), fast-fail first,
+  path-filtered to files that can change the outcome, with
+  `cancel-in-progress` so a new push cancels a stale run. It's the same
+  gate as `npm run validate`, and it's the only place checks run (see
+  `VERIFICATION.md`).
+- **CD** (push to `main`): GitHub Pages from a `pages-content` branch,
+  path-filtered to what reaches `dist/`; PR previews (`/<app>/pr-<n>/`) are
+  on demand from the Actions tab and removed when the PR closes. Deploys
+  share the `pages` concurrency group and are never cancelled mid-flight.
+- **Branch protection** (a GitHub ruleset on `main`, no bypass): PRs only,
+  required checks `ci / code-quality`, `ci / test`, `ci / build-and-audit`
+  (the calling job's id comes first), branch up to date before merging, no
+  force pushes or deletion. Repo settings: squash merges only, auto-merge
+  allowed, delete branches after merge.
+
 ## Claude Code workflow
 
 Every repo works the same way, from maat-core's

@@ -1,0 +1,102 @@
+name: App CI
+
+# Reusable validate pipeline for every maat app (maat-core STRUCTURE.md's CI
+# section). Three sequential stages, fast-fail first: code-quality (cheap,
+# deterministic) gates test (unit + e2e, the slow stage), which gates
+# build-and-audit. Each job is a fresh runner, so each runs its own
+# `npm ci`; setup-node's npm cache keeps that cheap.
+#
+# An app calls it from its own .github/workflows/ci.yml, which keeps the
+# triggers (pull_request with path filters), permissions and concurrency:
+#
+#   jobs:
+#     ci:
+#       uses: maat-apps/maat-core/.github/workflows/app-ci.yml@main
+#
+# Required status checks then report as "ci / code-quality", "ci / test"
+# and "ci / build-and-audit" (the calling job's id comes first).
+on:
+  workflow_call:
+    inputs:
+      e2e-command:
+        description: "Shell command(s) that run the e2e suite"
+        type: string
+        default: npm run test:e2e
+      playwright-browsers:
+        description: "Browsers `npx playwright install` sets up for e2e"
+        type: string
+        default: chromium webkit
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Typecheck
+        run: npm run typecheck
+
+  test:
+    needs: code-quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit tests + coverage
+        run: npm run test:coverage
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps ${{ inputs.playwright-browsers }}
+
+      - name: E2E tests
+        run: ${{ inputs.e2e-command }}
+
+  build-and-audit:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      # High and above only: this is a required check, and a low/moderate
+      # finding in a transitive dependency would otherwise block every merge.
+      - name: Audit
+        run: npm audit --audit-level=high
