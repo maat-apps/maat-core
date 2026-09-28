@@ -4,19 +4,22 @@ Browser-platform plumbing shared by `maat-apps` apps — no UI (components
 live in [`@maat-apps/ui`](../ui)). One package, one subpath per concern, so
 an app's bundle only contains what it imports.
 
-| Import                      | What                                              |
-| --------------------------- | ------------------------------------------------- |
-| `@maat-apps/core/storage`   | IndexedDB key-value store                         |
-| `@maat-apps/core/persisted` | In-memory + IndexedDB store (e.g. settings)       |
-| `@maat-apps/core/crypto`    | WebAuthn PRF → AES-GCM encryption, base64url      |
-| `@maat-apps/core/locale`    | Persisted locale store with device detection      |
-| `@maat-apps/core/i18n`      | `useTranslation` hook (React)                     |
-| `@maat-apps/core/sw`        | The app's service worker, as a factory            |
-| `@maat-apps/core/update`    | "Update app" with a pre-update data snapshot      |
-| `@maat-apps/core/install`   | `useInstallPrompt` hook for "Install app" (React) |
+| Import                       | What                                              |
+| ---------------------------- | ------------------------------------------------- |
+| `@maat-apps/core/storage`    | IndexedDB key-value store                         |
+| `@maat-apps/core/persisted`  | In-memory + IndexedDB store (e.g. settings)       |
+| `@maat-apps/core/crypto`     | WebAuthn PRF → AES-GCM encryption, base64url      |
+| `@maat-apps/core/locale`     | Persisted locale store with device detection      |
+| `@maat-apps/core/i18n`       | `useTranslation` hook (React)                     |
+| `@maat-apps/core/sw`         | The app's service worker, as a factory            |
+| `@maat-apps/core/update`     | "Update app" with a pre-update data snapshot      |
+| `@maat-apps/core/install`    | `useInstallPrompt` hook for "Install app" (React) |
+| `@maat-apps/core/validation` | Lenient per-entry Valibot parsing helpers         |
+| `@maat-apps/core/backup`     | Backup envelope, backup files, share/download     |
 
 `react` is an optional peer dependency, needed only for `/i18n` and
-`/install`. The app lock stays per-app until a second app needs one (#61).
+`/install`; `valibot` likewise, only for `/validation`. The app lock stays
+per-app until a second app needs one (#61).
 
 ## `storage`
 
@@ -193,6 +196,54 @@ reports `installed` when running standalone (incl. iOS), after
 `appinstalled`, or when the persisted flag says so — Chrome stops offering
 the prompt once installed, so the flag is the only record a plain browser
 tab has.
+
+## `validation`
+
+```ts
+import {
+  isRecord,
+  parseEach,
+  parseRecordEach,
+} from "@maat-apps/core/validation";
+
+parseEach(ItemSchema, stored.items); // valid entries only; non-array → []
+parseRecordEach(ProgressSchema, stored.state); // per key; non-object → {}
+```
+
+Anything crossing a trust boundary (stored data read back, an imported
+backup) is validated with Valibot, entry by entry: one malformed entry is
+dropped instead of failing the whole array/record, which is what
+`v.array()`/`v.record()` do. The schemas themselves stay in each app.
+
+## `backup`
+
+```ts
+import {
+  readBackupJson,
+  readBackupEnvelope,
+  downloadBackup,
+  shareBackup,
+  shareOrDownloadFile,
+} from "@maat-apps/core/backup";
+
+// Export: the app builds { app, version, exportedAt, data, ...its own }.
+const result = await shareBackup(backup); // "shared" | "cancelled" | "unavailable"
+if (result === "unavailable") downloadBackup(backup);
+
+// Import: envelope checks here, the app parses `data` with its schemas.
+const envelope = readBackupEnvelope(readBackupJson(text, messages), {
+  app: "my-app",
+  version: 1, // omit to accept any version
+  messages, // { notJson, wrongApp, wrongVersion? } in the app's language
+});
+```
+
+- Files are `<app>-backup-YYYY-MM-DD.txt` (local date), `text/plain`:
+  Chromium's Web Share file allow-list excludes JSON.
+- A dismissed share sheet is `"cancelled"` — a normal outcome, not a
+  reason to fall back to a download.
+- `shareFile`, `downloadFile` and `shareOrDownloadFile` work for any
+  generated file (e.g. a chart image), not just backups.
 
 ## Testing
 

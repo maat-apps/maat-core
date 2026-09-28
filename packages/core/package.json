@@ -1,7 +1,7 @@
 {
   "name": "@maat-apps/core",
-  "version": "0.1.0",
-  "description": "Browser-platform plumbing shared by maat-apps apps: storage, encryption, i18n, service worker, app update and install prompt. Only /i18n and /install use React.",
+  "version": "0.2.0",
+  "description": "Browser-platform plumbing shared by maat-apps apps: storage, encryption, validation, backups, i18n, service worker, app update and install prompt. Only /i18n and /install use React.",
   "type": "module",
   "license": "MIT",
   "files": [
@@ -9,6 +9,10 @@
   ],
   "sideEffects": false,
   "exports": {
+    "./backup": {
+      "types": "./dist/backup.d.ts",
+      "import": "./dist/backup.js"
+    },
     "./crypto": {
       "types": "./dist/crypto.d.ts",
       "import": "./dist/crypto.js"
@@ -40,6 +44,10 @@
     "./update": {
       "types": "./dist/update.d.ts",
       "import": "./dist/update.js"
+    },
+    "./validation": {
+      "types": "./dist/validation.d.ts",
+      "import": "./dist/validation.js"
     }
   },
   "scripts": {
@@ -48,10 +56,14 @@
     "test": "vitest run"
   },
   "peerDependencies": {
-    "react": "^19"
+    "react": "^19",
+    "valibot": "^1.1.0"
   },
   "peerDependenciesMeta": {
     "react": {
+      "optional": true
+    },
+    "valibot": {
       "optional": true
     }
   },
@@ -60,7 +72,8 @@
     "fake-indexeddb": "^6.2.5",
     "react": "^19",
     "tsup": "^8",
-    "typescript": "^5"
+    "typescript": "^5",
+    "valibot": "^1.1.0"
   },
   "publishConfig": {
     "access": "public"
