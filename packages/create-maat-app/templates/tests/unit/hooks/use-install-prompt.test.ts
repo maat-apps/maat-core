@@ -245,10 +245,3 @@ describe("useInstallPrompt", () => {
     );
   });
 });
-
-describe("getServerStandaloneSnapshot", () => {
-  it("is always false", async () => {
-    const { getServerStandaloneSnapshot } = await freshInstallPrompt();
-    expect(getServerStandaloneSnapshot()).toBe(false);
-  });
-});

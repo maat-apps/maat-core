@@ -93,9 +93,25 @@ describe("create-maat-app", () => {
       expect(existsSync(path.join(appDir, "src", "main.mobile-gate.tsx"))).toBe(
         false,
       );
-      expect(
-        existsSync(path.join(appDir, "src", "components", "mobile-gate.tsx")),
-      ).toBe(true);
+      expect(read(appDir, "src", "app", "root.tsx")).toContain(
+        '"@maat-apps/ui/mobile-gate"',
+      );
+    });
+
+    it("builds on @maat-apps/core and @maat-apps/ui instead of local copies", () => {
+      const { dependencies } = JSON.parse(read(appDir, "package.json"));
+
+      expect(Object.keys(dependencies)).toEqual(
+        expect.arrayContaining(["@maat-apps/core", "@maat-apps/ui"]),
+      );
+      expect(read(appDir, "src", "lib", "idb-store.ts")).toContain(
+        'createKeyValueStore({ name: "diet" })',
+      );
+      expect(read(appDir, "src", "sw.ts")).toContain('cacheName: "diet-v1"');
+      expect(read(appDir, "src", "app", "globals.css")).toContain(
+        '@import "@maat-apps/ui/theme.css"',
+      );
+      expect(existsSync(path.join(appDir, "src", "components"))).toBe(false);
     });
 
     it("copies the shared configs", () => {
@@ -164,9 +180,7 @@ describe("create-maat-app", () => {
       expect(read(appDir, "src", "main.tsx")).toBe(
         readFileSync(path.join(templatesDir, "src", "main.tsx"), "utf-8"),
       );
-      expect(
-        existsSync(path.join(appDir, "src", "components", "mobile-gate.tsx")),
-      ).toBe(false);
+      expect(read(appDir, "src", "main.tsx")).not.toContain("MobileGate");
       expect(existsSync(path.join(appDir, "src", "app", "root.tsx"))).toBe(
         false,
       );

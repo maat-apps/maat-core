@@ -33,6 +33,16 @@ describe("getSettingsSnapshot / getServerSettingsSnapshot", () => {
     await appSettings.whenLoaded();
     expect(appSettings.getSettingsSnapshot().installed).toBe(true);
   });
+
+  it("ignores a stored value with a non-boolean flag", async () => {
+    vi.resetModules();
+    const { kvSet } = await import("@/lib/idb-store");
+    const { SETTINGS_KEY } = await import("@/lib/storage-keys");
+    await kvSet(SETTINGS_KEY, { installed: "yes" });
+    const appSettings = await freshAppSettings();
+    await appSettings.whenLoaded();
+    expect(appSettings.getSettingsSnapshot().installed).toBe(false);
+  });
 });
 
 describe("markInstalled", () => {
