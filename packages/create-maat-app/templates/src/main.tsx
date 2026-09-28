@@ -1,4 +1,3 @@
-import "@fontsource-variable/outfit";
 import "./app/globals.css";
 
 import { StrictMode } from "react";

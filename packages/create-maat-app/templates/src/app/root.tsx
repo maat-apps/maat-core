@@ -1,4 +1,4 @@
-import { MobileGate } from "../components/mobile-gate";
+import { MobileGate } from "@maat-apps/ui/mobile-gate";
 import { useTranslation } from "../i18n/use-translation";
 import { AppRouter } from "./router";
 

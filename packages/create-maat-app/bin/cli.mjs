@@ -81,9 +81,7 @@ copyFileSync(
 );
 rmSync(path.join(targetDir, "src", "main.mobile-gate.tsx"), { force: true });
 if (desktop) {
-  rmSync(path.join(targetDir, "src", "components", "mobile-gate.tsx"), {
-    force: true,
-  });
+  // root.tsx is the MobileGate wrapper (@maat-apps/ui's MobileGate).
   rmSync(path.join(targetDir, "src", "app", "root.tsx"), { force: true });
   copyFileSync(
     path.join(templatesDir, "playwright.config.desktop.ts"),
@@ -152,7 +150,7 @@ replaceTokens(path.join(targetDir, "CLAUDE.md"), {
   "{{APP_NAME}}": appName,
   "{{MOBILE_LINE}}": desktop
     ? "Supports desktop and mobile viewports."
-    : "Mobile-only (`src/components/mobile-gate.tsx`), like routines.",
+    : "Mobile-only (`@maat-apps/ui`'s `MobileGate`, from `src/app/root.tsx`), like routines.",
 });
 writeFileSync(
   path.join(targetDir, "README.md"),

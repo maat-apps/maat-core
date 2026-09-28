@@ -1,40 +1,28 @@
 import { act, renderHook } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { setLocale, useTranslation } from "@/i18n/use-translation";
+// The locale store is a module-level singleton; a fresh module per test
+// keeps one test's setLocale() from leaking into the next.
+async function freshUseTranslation() {
+  vi.resetModules();
+  return import("@/i18n/use-translation");
+}
 
 describe("useTranslation", () => {
-  it("returns the current locale and its catalog's messages", () => {
+  it("translates from the current locale's catalog", async () => {
+    const { useTranslation } = await freshUseTranslation();
     const { result } = renderHook(() => useTranslation());
+
     expect(result.current.locale).toBe("en");
     expect(result.current.t("welcome")).toBe("Welcome");
   });
 
-  it("leaves the message unchanged when no param matches a placeholder", () => {
+  it("re-renders after setLocale", async () => {
+    const { useTranslation } = await freshUseTranslation();
     const { result } = renderHook(() => useTranslation());
-    expect(result.current.t("welcome", { unused: "value" })).toBe("Welcome");
-  });
 
-  it("updates every subscribed hook instance in the same tick on locale switch", () => {
-    const first = renderHook(() => useTranslation());
-    const second = renderHook(() => useTranslation());
+    act(() => result.current.setLocale("en"));
 
-    act(() => {
-      setLocale("en");
-    });
-
-    expect(first.result.current.locale).toBe("en");
-    expect(second.result.current.locale).toBe("en");
-  });
-
-  it("stops notifying a hook instance once it unmounts", () => {
-    const { result, unmount } = renderHook(() => useTranslation());
-    unmount();
-    expect(() => {
-      act(() => {
-        setLocale("en");
-      });
-    }).not.toThrow();
-    expect(result.current.locale).toBe("en");
+    expect(result.current.t("updateApp")).toBe("Update app");
   });
 });

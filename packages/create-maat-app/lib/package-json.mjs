@@ -38,7 +38,9 @@ export function buildPackageJson(appName, desktop = false) {
       "validate:fix": "npm run lint:fix && npm run format && npm audit fix",
     },
     dependencies: {
-      "@fontsource-variable/outfit": "^5.3.0",
+      "@base-ui/react": "^1.8.0",
+      "@maat-apps/core": "^0.2.0",
+      "@maat-apps/ui": "^0.6.0",
       react: "^19",
       "react-dom": "^19",
       "react-router": "^7",

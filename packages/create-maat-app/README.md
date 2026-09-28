@@ -16,7 +16,7 @@ node packages/create-maat-app/bin/cli.mjs <app-name> [--desktop]
   current working directory.
 - `--desktop` — scaffold without the mobile-only gate. Omit this for a
   mobile-only app (the default, matching routines): the generated app
-  wraps its router in `src/components/mobile-gate.tsx`.
+  wraps its router in `@maat-apps/ui`'s `MobileGate` (`src/app/root.tsx`).
 
 ## What it generates
 
@@ -38,24 +38,27 @@ node packages/create-maat-app/bin/cli.mjs <app-name> [--desktop]
   `session-validate.sh` Stop hook (typecheck every turn, unit tests only
   when `src/`/`tests/` changed) and the `post-edit-format.mjs` PostToolUse
   hook.
-- A minimal single-locale i18n store (`src/i18n/use-translation.ts` +
-  `en.json`) following `STRUCTURE.md`'s pattern, and one starter view
-  (`src/views/home/home-view.tsx`) wired into `src/app/router.tsx`.
+- **Built on the shared packages, not copies**: `@maat-apps/ui` for
+  components and the theme (`src/app/globals.css` imports
+  `@maat-apps/ui/theme.css` — true black + white on Outfit), and
+  `@maat-apps/core` for the plumbing, through thin per-app wrappers:
+  `src/lib/idb-store.ts` (`/storage`, a database named after the app),
+  `app-settings.ts` (`/persisted`), `locale-store.ts` +
+  `src/i18n/use-translation.ts` (`/locale` + `/i18n`, `en.json`),
+  `app-update.ts` (`/update`), `src/hooks/use-install-prompt.ts`
+  (`/install`) and `src/sw.ts` (`/sw`) — the same shape routines and
+  trainer use.
 - A working PWA shell and manual force-update mechanism, every app's
-  default rather than something bolted on later: `vite-plugin-pwa`
-  (`injectManifest` strategy) + a hand-rolled `src/sw.ts` that deliberately
-  never calls `skipWaiting()` on install, `public/manifest.json` +
-  `public/icon.svg` (a brand-neutral placeholder — replace with the app's
-  own mark), `src/lib/app-update.ts` (tells a waiting worker to take over,
-  clears every cache, reloads), `src/hooks/use-install-prompt.ts` +
-  `src/lib/app-settings.ts` (install-prompt handling, including the
-  persisted "installed" flag Chrome needs), and a small `src/lib/
-idb-store.ts` KV wrapper those two lean on. `home-view.tsx` wires up
-  bare Install/Update buttons as a placeholder — move them into a real
-  Settings screen once the app has one (see trainer's or routines' own
-  `settings-app-section.tsx` for that pattern), and extend
-  `app-update.ts` with a snapshot/restore step once the app has its own
-  local data worth backing up before an update.
+  default: `vite-plugin-pwa` (`injectManifest`) with that `src/sw.ts`,
+  `public/manifest.json` + `public/icon.svg` (a brand-neutral placeholder —
+  replace with the app's own mark), and one starter view
+  (`src/views/home/home-view.tsx`, wired into `src/app/router.tsx`) with
+  bare Install/Update buttons. Move those into a real Settings screen
+  later, and give `app-update.ts` a pre-update snapshot
+  (`createUpdateSnapshot`) once the app has data worth backing up.
+- CI/CD: `.github/workflows/` callers of maat-core's reusable workflows
+  (from [`configs/workflows`](../../configs/workflows)).
+- Version `1.0.0`, which the app keeps (STRUCTURE.md's Versioning).
 
 ## What it deliberately doesn't include
 
