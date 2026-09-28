@@ -1,6 +1,7 @@
 export * from "./app-bar";
 export * from "./button";
 export * from "./chart";
+export * from "./checkbox";
 export * from "./confirm-drawer";
 export * from "./date-picker";
 export * from "./drag-handle";
@@ -16,3 +17,5 @@ export * from "./progress-ring";
 export * from "./reset-button";
 export * from "./select";
 export * from "./settings-primitives";
+export * from "./switch";
+export * from "./textarea";

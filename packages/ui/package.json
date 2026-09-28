@@ -1,6 +1,6 @@
 {
   "name": "@maat-apps/ui",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Shared UI components for maat-apps repos — extracted from routines, per maat-apps/maat-core#3.",
   "type": "module",
   "license": "MIT",
@@ -24,6 +24,10 @@
     "./chart": {
       "types": "./dist/chart.d.ts",
       "import": "./dist/chart.js"
+    },
+    "./checkbox": {
+      "types": "./dist/checkbox.d.ts",
+      "import": "./dist/checkbox.js"
     },
     "./confirm-drawer": {
       "types": "./dist/confirm-drawer.d.ts",
@@ -85,6 +89,14 @@
     "./settings-primitives": {
       "types": "./dist/settings-primitives.d.ts",
       "import": "./dist/settings-primitives.js"
+    },
+    "./switch": {
+      "types": "./dist/switch.d.ts",
+      "import": "./dist/switch.js"
+    },
+    "./textarea": {
+      "types": "./dist/textarea.d.ts",
+      "import": "./dist/textarea.js"
     }
   },
   "scripts": {
