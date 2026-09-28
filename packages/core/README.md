@@ -10,9 +10,10 @@ concern, so an app's bundle only contains what it imports.
 | `@maat-apps/core/crypto`  | WebAuthn PRF → AES-GCM encryption, base64url  |
 | `@maat-apps/core/locale`  | Persisted locale store with device detection  |
 | `@maat-apps/core/i18n`    | `useTranslation` hook (the only React import) |
+| `@maat-apps/core/sw`      | The app's service worker, as a factory        |
 
-Planned: `/sw` (#45), later `/lock`, `/update` (#46). `react` is an
-optional peer dependency, needed only for `/i18n`.
+Planned: `/lock`, `/update` (#46). `react` is an optional peer dependency,
+needed only for `/i18n`.
 
 ## `storage`
 
@@ -91,6 +92,38 @@ t("greeting", { name: "Ana" }); // "Hello, {name}!" → "Hello, Ana!"
 - `t()` only accepts keys present in _every_ catalog, so a key missing
   from one language fails to compile. Unknown `{placeholders}` are left
   as-is.
+
+## `sw`
+
+Each app keeps a tiny `src/sw.ts` entry, since vite-plugin-pwa's
+`injectManifest` needs a file to compile and inject `self.__WB_MANIFEST`
+into:
+
+```ts
+/// <reference lib="webworker" />
+import { registerAppWorker } from "@maat-apps/core/sw";
+
+declare const self: ServiceWorkerGlobalScope & {
+  __WB_MANIFEST: Array<{ url: string; revision: string | null } | string>;
+};
+
+registerAppWorker(self, {
+  cacheName: "my-app-v1", // bump whenever the app shell changes
+  manifest: self.__WB_MANIFEST,
+  baseUrl: import.meta.env.BASE_URL,
+});
+```
+
+- Install precaches `baseUrl` plus every manifest entry. Activate deletes
+  every cache not named `cacheName` and claims clients.
+- Navigations and `manifest.json` go network-first, with the cached shell
+  as the offline fallback. Everything else is cache-first (Vite's assets
+  are content-hashed). Only successful `GET`s over http(s) are cached.
+- A new worker **waits**: it takes over only when the page posts
+  `SKIP_WAITING_MESSAGE` to it (e.g. from an "Update app" action), so an
+  open tab never loses the chunks it already loaded.
+- **Bump `cacheName` whenever the shell changes.** It's the only way old
+  caches get cleaned up.
 
 ## Testing
 
