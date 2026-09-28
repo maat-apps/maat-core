@@ -13,7 +13,7 @@ export function buildPackageJson(appName, desktop = false) {
     : ["mobile-chromium", "mobile-iphone"];
   return {
     name: appName,
-    version: "0.1.0",
+    version: "1.0.0",
     private: true,
     type: "module",
     engines: {
