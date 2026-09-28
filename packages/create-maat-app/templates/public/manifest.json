@@ -1,0 +1,18 @@
+{
+  "name": "{{APP_NAME}}",
+  "short_name": "{{APP_NAME}}",
+  "description": "{{APP_NAME}}",
+  "start_url": "/{{APP_NAME}}/",
+  "scope": "/{{APP_NAME}}/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/{{APP_NAME}}/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,4 +1,20 @@
-// Global Vitest setup — add polyfills/mocks here as this app's src/lib/,
-// src/hooks/, or src/i18n/ code needs browser globals jsdom doesn't
-// provide (see maat-core/STRUCTURE.md's Testing section).
-export {};
+import { afterEach } from "vitest";
+
+// jsdom has no IndexedDB implementation, so every test file relying on the
+// storage layer (src/lib/idb-store.ts, app-settings.ts, ...) needs it faked
+// globally rather than per-file.
+import "fake-indexeddb/auto";
+
+// app-settings.ts writes to IndexedDB fire-and-forget, on purpose, for UI
+// responsiveness. If a test ends (or calls vi.resetModules()) while one of
+// those writes is still in-flight, the next test's beforeEach (deleting the
+// database) can close the connection out from under it, throwing an
+// unhandled InvalidStateError that gets misattributed to whatever test
+// happens to be running at that point. A trailing macrotask tick after
+// every test gives any such write a chance to settle first.
+afterEach(async () => {
+  // A first-ever open in a generation also runs onupgradeneeded, which can
+  // take more than one macrotask tick — a plain setTimeout(0) wasn't
+  // consistently enough.
+  await new Promise((resolve) => setTimeout(resolve, 20));
+});
