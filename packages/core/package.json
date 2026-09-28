@@ -1,7 +1,7 @@
 {
   "name": "@maat-apps/core",
   "version": "0.1.0",
-  "description": "Browser-platform plumbing shared by maat-apps apps: IndexedDB key-value storage, WebAuthn PRF encryption, i18n and the service worker. Only /i18n uses React.",
+  "description": "Browser-platform plumbing shared by maat-apps apps: storage, encryption, i18n, service worker, app update and install prompt. Only /i18n and /install use React.",
   "type": "module",
   "license": "MIT",
   "files": [
@@ -17,9 +17,17 @@
       "types": "./dist/i18n.d.ts",
       "import": "./dist/i18n.js"
     },
+    "./install": {
+      "types": "./dist/install.d.ts",
+      "import": "./dist/install.js"
+    },
     "./locale": {
       "types": "./dist/locale.d.ts",
       "import": "./dist/locale.js"
+    },
+    "./persisted": {
+      "types": "./dist/persisted.d.ts",
+      "import": "./dist/persisted.js"
     },
     "./storage": {
       "types": "./dist/storage.d.ts",
@@ -28,6 +36,10 @@
     "./sw": {
       "types": "./dist/sw.d.ts",
       "import": "./dist/sw.js"
+    },
+    "./update": {
+      "types": "./dist/update.d.ts",
+      "import": "./dist/update.js"
     }
   },
   "scripts": {

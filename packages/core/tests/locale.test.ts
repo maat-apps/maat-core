@@ -1,22 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createLocaleStore, detectLocale } from "../src/locale";
 import type { KeyValueStore } from "../src/storage";
+import { memoryStorage } from "./memory-storage";
 
 const KEY = "test-locale";
-
-function memoryStorage(initial: Record<string, unknown> = {}) {
-  const data = new Map(Object.entries(initial));
-  const storage: KeyValueStore = {
-    get: async <T>(key: string) => data.get(key) as T | undefined,
-    set: async (key, value) => {
-      data.set(key, value);
-    },
-    delete: async (key) => {
-      data.delete(key);
-    },
-  };
-  return { storage, data };
-}
 
 function useDeviceLanguage(language: string) {
   vi.stubGlobal("window", { navigator: { language } });
