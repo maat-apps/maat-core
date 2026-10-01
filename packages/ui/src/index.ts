@@ -1,4 +1,5 @@
 export * from "./app-bar";
+export * from "./app-lock-gate";
 export * from "./button";
 export * from "./chart";
 export * from "./checkbox";

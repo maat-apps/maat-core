@@ -1,7 +1,7 @@
 {
   "name": "@maat-apps/core",
-  "version": "0.2.0",
-  "description": "Browser-platform plumbing shared by maat-apps apps: storage, encryption, validation, backups, i18n, service worker, app update and install prompt. Only /i18n and /install use React.",
+  "version": "0.3.0",
+  "description": "Browser-platform plumbing shared by maat-apps apps: storage, encryption, validation, backups, i18n, service worker, app lock, app update and install prompt. Only /i18n and /install use React.",
   "type": "module",
   "license": "MIT",
   "files": [
@@ -24,6 +24,10 @@
     "./install": {
       "types": "./dist/install.d.ts",
       "import": "./dist/install.js"
+    },
+    "./lock": {
+      "types": "./dist/lock.d.ts",
+      "import": "./dist/lock.js"
     },
     "./locale": {
       "types": "./dist/locale.d.ts",
