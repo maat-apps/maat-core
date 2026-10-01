@@ -9,6 +9,7 @@ an app's bundle only contains what it imports.
 | `@maat-apps/core/storage`    | IndexedDB key-value store                         |
 | `@maat-apps/core/persisted`  | In-memory + IndexedDB store (e.g. settings)       |
 | `@maat-apps/core/crypto`     | WebAuthn PRF → AES-GCM encryption, base64url      |
+| `@maat-apps/core/lock`       | App lock: WebAuthn gate + optional encryption     |
 | `@maat-apps/core/locale`     | Persisted locale store with device detection      |
 | `@maat-apps/core/i18n`       | `useTranslation` hook (React)                     |
 | `@maat-apps/core/sw`         | The app's service worker, as a factory            |
@@ -18,8 +19,7 @@ an app's bundle only contains what it imports.
 | `@maat-apps/core/backup`     | Backup envelope, backup files, share/download     |
 
 `react` is an optional peer dependency, needed only for `/i18n` and
-`/install`; `valibot` likewise, only for `/validation`. The app lock stays
-per-app until a second app needs one (#61).
+`/install`; `valibot` likewise, only for `/validation` and `/lock`.
 
 ## `storage`
 
@@ -66,6 +66,52 @@ const back = await decryptJson<typeof data>(key, blob);
   encrypted value from plain data.
 - `randomBytes`, `toBase64Url`, `fromBase64Url`: the helpers a WebAuthn
   enrol/verify ceremony needs (challenges, storing credential ids).
+
+## `lock`
+
+Every app ships the app lock. The logic lives here; the lock screen is
+`@maat-apps/ui/app-lock-gate`.
+
+```ts
+// src/lib/encryption-key.ts — shared by the lock and every encrypting module
+import { createKeyHolder } from "@maat-apps/core/lock";
+export const encryptionKey = createKeyHolder();
+
+// src/lib/app-lock.ts
+import { createAppLock } from "@maat-apps/core/lock";
+export const appLock = createAppLock({
+  name: "My App", // shown by the platform prompt
+  keyInfo: "my-app-data-v1", // HKDF info — NEVER change once data exists
+  keyHolder: encryptionKey,
+  enrolment: { get: () => getSettings().lock, set: setLockEnrolment },
+  data: {
+    rewrite: () => replaceAllData(getRawData()), // re-save with the new key
+    erase: async () => {
+      replaceAllData(emptyData);
+      await discardUpdateSnapshot();
+    },
+  },
+});
+```
+
+- **Two modes**, decided at enrolment: with the PRF extension, an AES-GCM
+  key is derived (`keyInfo` via `/crypto`'s `deriveKey`) and set on the
+  key holder, and storage encrypts with it; without PRF the lock is a UI
+  gate only, and the app's settings must say so.
+- `enrol()` registers the credential and, with PRF, runs a second prompt
+  right away to get the secret (PRF is only _requested_ at creation).
+  `verify(enrolment)` passes the lock and derives the key in one prompt.
+- `disable()` (unlocked, key in memory): data is rewritten unencrypted.
+  `disableAndErase()` is the escape hatch when the authenticator is gone —
+  the data can't be decrypted, so it's erased; the gate warns first.
+- Persist the enrolment in the app's settings (`/persisted`), parsing it
+  with `parseLockEnrolment` — anything corrupt reads as "no lock".
+- Storage: encrypt on write when `encryptionKey.get()` is set; before the
+  first read, if the stored enrolment has `encryptionSupported`, `await
+encryptionKey.whenSet()`. `/update`'s `encryption: { getKey:
+encryptionKey.get }` covers the snapshot.
+- Session unlock state is memory only (`isSessionUnlocked`,
+  `subscribeToUnlock`): closing the app locks it again.
 
 ## `locale` + `i18n`
 

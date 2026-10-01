@@ -47,8 +47,10 @@ the pattern an app builds on top of them.
 
 ## Optional encryption (WebAuthn PRF)
 
-Storage modules can expose `setEncryptionKey(key: CryptoKey | null)`. The
-key is AES-GCM, derived with HKDF-SHA256 from a WebAuthn credential's
+Every app has the app lock (`@maat-apps/core/lock`), so every storage
+module that persists user data reads its key from the app's shared key
+holder (`createKeyHolder()`) and encrypts what it writes whenever a key is
+set. The key is AES-GCM, derived with HKDF-SHA256 from a WebAuthn credential's
 **PRF extension** output (`deriveKey` in `@maat-apps/core/crypto`), only
 when the authenticator supports PRF; otherwise an app lock is a UI gate
 only, and the UI must say so.
@@ -60,7 +62,8 @@ only, and the UI must say so.
   later. `create()` only reports _whether_ PRF is available, never the
   secret, so enrolment needs a second, immediate assertion to obtain it.
 - When encrypted data exists, a module's background load must wait for the
-  key before decrypting, instead of racing ahead as it does unencrypted.
+  key (`keyHolder.whenSet()`) before decrypting, instead of racing ahead as
+  it does unencrypted.
 
 ## Testing seams
 

@@ -4,6 +4,7 @@ export default defineConfig({
   entry: [
     "src/index.ts",
     "src/app-bar.tsx",
+    "src/app-lock-gate.tsx",
     "src/button.tsx",
     "src/checkbox.tsx",
     "src/chart.tsx",

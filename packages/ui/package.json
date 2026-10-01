@@ -1,6 +1,6 @@
 {
   "name": "@maat-apps/ui",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Shared UI components for maat-apps repos — extracted from routines, per maat-apps/maat-core#3.",
   "type": "module",
   "license": "MIT",
@@ -12,6 +12,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./app-lock-gate": {
+      "types": "./dist/app-lock-gate.d.ts",
+      "import": "./dist/app-lock-gate.js"
     },
     "./app-bar": {
       "types": "./dist/app-bar.d.ts",

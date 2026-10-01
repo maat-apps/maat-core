@@ -7,6 +7,7 @@ export default defineConfig({
     "src/i18n.ts",
     "src/install.ts",
     "src/locale.ts",
+    "src/lock.ts",
     "src/persisted.ts",
     "src/storage.ts",
     "src/sw.ts",

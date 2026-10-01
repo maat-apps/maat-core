@@ -109,6 +109,12 @@ everything from one barrel for convenience.
   secondary action button, sharing one sizing/shape convention.
 - `mobile-gate.tsx` — renders `children` for phone-sized viewports, a
   message otherwise.
+- `app-lock-gate.tsx` — the app lock screen: renders `children` once the
+  session passed the lock, otherwise the unlock prompt and, when the
+  device lets the user down, the "turn off the lock" escape hatch (with an
+  erase warning when the lock encrypts). Takes `@maat-apps/core/lock`'s
+  `AppLock`, the stored enrolment, a `ready` flag (settings loaded) and the
+  app's translated `labels`.
 - `empty-state.tsx` — a centered "nothing here" message with an optional
   call-to-action button.
 
@@ -156,13 +162,9 @@ the gate shape.
 
 ## Not extracted (on purpose) — the coupling audit's result
 
-- **`app-lock-gate.tsx`** — not a UI component wearing app-specific logic,
-  but an entire feature (WebAuthn PRF enrollment/unlock state, encryption
-  key derivation, multiple screens, an escape-hatch data-erasure flow)
-  that happens to render something. If a second app ever wants the
-  identical WebAuthn app-lock feature, that's a future
-  `@maat-apps/app-lock` **feature** package (state + logic + UI together),
-  not a `ui` component.
+- Nothing at the moment. The app lock, once listed here as a future
+  feature package, is now split: logic in `@maat-apps/core/lock`, the lock
+  screen as `app-lock-gate.tsx` here (maat-core#61).
 
 ## Publishing (maintainers)
 

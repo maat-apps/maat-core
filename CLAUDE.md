@@ -8,11 +8,11 @@ and the npm workspaces under `packages/`. See `README.md` for the map.
 
 ## Packages
 
-| Package                             | What                                                        |
-| ----------------------------------- | ----------------------------------------------------------- |
-| `packages/ui` → `@maat-apps/ui`     | Shared React components (shadcn `base-nova`)                |
-| `packages/core` → `@maat-apps/core` | Non-UI plumbing: storage, crypto, i18n, SW, update, install |
-| `packages/create-maat-app`          | Scaffolding CLI for a new app                               |
+| Package                             | What                                                     |
+| ----------------------------------- | -------------------------------------------------------- |
+| `packages/ui` → `@maat-apps/ui`     | Shared React components (shadcn `base-nova`)             |
+| `packages/core` → `@maat-apps/core` | Non-UI plumbing: storage, crypto, lock, i18n, SW, update |
+| `packages/create-maat-app`          | Scaffolding CLI for a new app                            |
 
 Consumers: `maat-apps/routines` and `maat-apps/trainer`. A change here is
 only half done until they use it — follow up with a PR in each app.
@@ -66,8 +66,9 @@ Publisher entry for `publish.yml` on npmjs.com.
 - Work items are GitHub Issues on this repo, tracked in the
   [Ma'at Apps Roadmap](https://github.com/orgs/maat-apps/projects/1)
   (`STRUCTURE.md`'s Task tracking).
-- `core`'s non-React subpaths (`storage`, `crypto`, `locale`, `persisted`,
-  `update`, `sw`) must never import `react`; only `/i18n` and `/install`
+- `core`'s non-React subpaths (`storage`, `crypto`, `lock`, `locale`,
+  `persisted`, `update`, `sw`, `validation`, `backup`) must never import
+  `react`; only `/i18n` and `/install`
   may (`react` is an optional peer).
 - `core/crypto`'s `deriveKey` `info` argument is part of each app's stored
   data format — never change a value an app already uses (routines:
