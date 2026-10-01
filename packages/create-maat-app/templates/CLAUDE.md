@@ -43,6 +43,13 @@ What follows here is what's specific to **{{APP_NAME}}**.
 - A Playwright project's reusable test-helper file belongs at
   `e2e/utils.ts`, not `fixtures.ts` — these are plain functions specs call
   directly, not Playwright's own `test.extend()` fixture-injection system.
+- **App lock.** Every maat-apps app has it (`@maat-apps/core/lock` +
+  `@maat-apps/ui/app-lock-gate`, wrapped around the router in
+  `src/app/router.tsx`). `src/lib/app-lock.ts` wires it to settings; once
+  the app keeps data, connect its `data.rewrite`/`data.erase` to storage
+  and encrypt what storage persists with `src/lib/encryption-key.ts` (see
+  maat-core's `docs/storage.md`). **Never change `HKDF_INFO`** once users
+  have data.
 - Full pattern log: none yet — run `/learn-patterns` after a non-trivial
   session to start one.
 

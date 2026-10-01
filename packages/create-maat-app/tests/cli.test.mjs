@@ -111,7 +111,18 @@ describe("create-maat-app", () => {
       expect(read(appDir, "src", "app", "globals.css")).toContain(
         '@import "@maat-apps/ui/theme.css"',
       );
-      expect(existsSync(path.join(appDir, "src", "components"))).toBe(false);
+      expect(existsSync(path.join(appDir, "src", "components", "ui"))).toBe(
+        false,
+      );
+    });
+
+    it("ships the app lock with this app's HKDF info, around the router", () => {
+      expect(read(appDir, "src", "lib", "app-lock.ts")).toContain(
+        'HKDF_INFO = "diet-data-v1"',
+      );
+      expect(read(appDir, "src", "app", "router.tsx")).toContain(
+        "<AppLockGate>",
+      );
     });
 
     it("copies the shared configs", () => {

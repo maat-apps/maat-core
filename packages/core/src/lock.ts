@@ -107,10 +107,8 @@ export type AppLockOptions = {
    */
   keyInfo: string;
   keyHolder: KeyHolder;
-  enrolment: {
-    get: () => LockEnrolment | null;
-    set: (enrolment: LockEnrolment | null) => void;
-  };
+  /** Persists the enrolment (`null` when the lock is turned off). */
+  saveEnrolment: (enrolment: LockEnrolment | null) => void;
   data: {
     /**
      * Writes the in-memory data back with the holder's current key — right
@@ -157,7 +155,7 @@ const ES256 = -7;
 const RS256 = -257;
 
 export function createAppLock(options: AppLockOptions): AppLock {
-  const { name, keyInfo, keyHolder, enrolment, data } = options;
+  const { name, keyInfo, keyHolder, saveEnrolment, data } = options;
 
   // Closing the app locks it again. Enrolling counts as passing: the user
   // just completed the very same platform prompt.
@@ -247,7 +245,7 @@ export function createAppLock(options: AppLockOptions): AppLock {
       encryptionSupported,
       ...(encryptionSupported && { prfSalt }),
     };
-    enrolment.set(enrolled);
+    saveEnrolment(enrolled);
     markSessionUnlocked();
     if (encryptionSupported) data.rewrite();
     return enrolled;
@@ -291,14 +289,14 @@ export function createAppLock(options: AppLockOptions): AppLock {
   }
 
   function disable(): void {
-    enrolment.set(null);
+    saveEnrolment(null);
     keyHolder.set(null);
     data.rewrite();
     markSessionUnlocked();
   }
 
   async function disableAndErase(): Promise<void> {
-    enrolment.set(null);
+    saveEnrolment(null);
     keyHolder.set(null);
     try {
       await data.erase();

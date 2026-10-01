@@ -43,11 +43,8 @@ function setup() {
     name: "Test",
     keyInfo: "test-data-v1",
     keyHolder,
-    enrolment: {
-      get: () => stored,
-      set: (next) => {
-        stored = next;
-      },
+    saveEnrolment: (next) => {
+      stored = next;
     },
     data,
   });
