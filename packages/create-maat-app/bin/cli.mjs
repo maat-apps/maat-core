@@ -140,6 +140,9 @@ replaceTokens(
 replaceTokens(path.join(targetDir, "src", "lib", "idb-store.ts"), {
   "{{APP_NAME}}": appName,
 });
+replaceTokens(path.join(targetDir, "src", "lib", "app-lock.ts"), {
+  "{{APP_NAME}}": appName,
+});
 replaceTokens(path.join(targetDir, "src", "lib", "storage-keys.ts"), {
   "{{APP_NAME}}": appName,
 });

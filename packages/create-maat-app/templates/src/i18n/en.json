@@ -9,5 +9,18 @@
   "updateApp": "Update app",
   "updateAppDescription": "Fetch the newest version and reload.",
   "updateAppAction": "Update",
-  "updateAppBusy": "Updating…"
+  "updateAppBusy": "Updating…",
+  "appLock": "App lock",
+  "appLockDescription": "Ask for your fingerprint before opening.",
+  "appLockUnsupported": "No fingerprint unlock on this device.",
+  "appLockFailed": "Setting up the lock did not work.",
+  "lockedTitle": "This app is locked",
+  "lockedDescription": "Unlock to continue.",
+  "unlock": "Unlock",
+  "unlockFailed": "That did not work. Try again.",
+  "turnOffLock": "Turn off the lock",
+  "eraseDataWarningTitle": "This will erase your data",
+  "eraseDataWarningDescription": "Your data is encrypted and can only be read with a working fingerprint unlock. Since that isn't available right now, turning off the lock permanently erases it — there is no way to recover it afterwards.",
+  "eraseDataConfirm": "Erase and continue",
+  "eraseDataCancel": "Cancel"
 }

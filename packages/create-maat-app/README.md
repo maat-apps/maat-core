@@ -48,6 +48,12 @@ node packages/create-maat-app/bin/cli.mjs <app-name> [--desktop]
   `app-update.ts` (`/update`), `src/hooks/use-install-prompt.ts`
   (`/install`) and `src/sw.ts` (`/sw`) — the same shape routines and
   trainer use.
+- **The app lock**, every app's default: `src/lib/app-lock.ts`
+  (`/lock`, HKDF info `<app-name>-data-v1`), `encryption-key.ts`,
+  `src/components/app-lock-gate.tsx` (ui's `AppLockGate` around the
+  router) and a lock switch on the starter view. Its `data` adapter is
+  empty until the app keeps data — then wire it to storage like routines
+  and trainer do.
 - A working PWA shell and manual force-update mechanism, every app's
   default: `vite-plugin-pwa` (`injectManifest`) with that `src/sw.ts`,
   `public/manifest.json` + `public/icon.svg` (a brand-neutral placeholder —

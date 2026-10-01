@@ -83,7 +83,7 @@ export const appLock = createAppLock({
   name: "My App", // shown by the platform prompt
   keyInfo: "my-app-data-v1", // HKDF info — NEVER change once data exists
   keyHolder: encryptionKey,
-  enrolment: { get: () => getSettings().lock, set: setLockEnrolment },
+  saveEnrolment: setLockEnrolment, // into the app's settings
   data: {
     rewrite: () => replaceAllData(getRawData()), // re-save with the new key
     erase: async () => {
