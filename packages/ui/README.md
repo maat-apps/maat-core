@@ -132,6 +132,17 @@ string(s) as props instead — `cancelLabel`/`backLabel`/`message`.
 `navigator.storage.persist()` calls, which are per-app setup, not part of
 the gate shape.
 
+## Tests
+
+`npm test -w packages/ui` runs two Vitest projects: `jsdom` (`tests/*.test.tsx`)
+for behavior without layout, and `browser` (`tests/browser/`) in a real
+headless Chromium for what jsdom can't do — media queries (MobileGate),
+touch gestures (the drawer's swipe, via the `touchSwipe` command in
+`tests/browser/commands.ts`) and font loading. Locally, without
+`npx playwright install chromium`, point `PLAYWRIGHT_CHROMIUM_PATH` at an
+installed Chromium. Apps don't repeat these in their e2e (STRUCTURE.md's
+Testing section).
+
 ## Setup a consuming app needs
 
 - **Peer dependencies**: `react`, `react-dom` (^19), `@base-ui/react`
