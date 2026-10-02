@@ -1,7 +1,7 @@
 {
   "name": "@maat-apps/ui",
-  "version": "0.8.0",
-  "description": "Shared UI components for maat-apps repos — extracted from routines, per maat-apps/maat-core#3.",
+  "version": "0.9.0",
+  "description": "Shared UI components for maat-apps repos \u2014 extracted from routines, per maat-apps/maat-core#3.",
   "type": "module",
   "license": "MIT",
   "files": [
@@ -101,6 +101,10 @@
       "types": "./dist/settings-primitives.d.ts",
       "import": "./dist/settings-primitives.js"
     },
+    "./smart-back": {
+      "types": "./dist/smart-back.d.ts",
+      "import": "./dist/smart-back.js"
+    },
     "./sortable-list": {
       "types": "./dist/sortable-list.d.ts",
       "import": "./dist/sortable-list.js"
@@ -131,7 +135,8 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "react": "^19",
-    "react-dom": "^19"
+    "react-dom": "^19",
+    "react-router": "^7"
   },
   "peerDependenciesMeta": {
     "@dnd-kit/core": {
@@ -144,6 +149,9 @@
       "optional": true
     },
     "@dnd-kit/utilities": {
+      "optional": true
+    },
+    "react-router": {
       "optional": true
     }
   },
@@ -167,6 +175,7 @@
     "@types/react-dom": "^19",
     "react": "^19",
     "react-dom": "^19",
+    "react-router": "^7.9.6",
     "tsup": "^8",
     "typescript": "^5"
   },
