@@ -59,6 +59,7 @@ function fakeScope() {
     },
     skipWaiting: vi.fn(async () => {}),
     clients: { claim: vi.fn(async () => {}) },
+    location: { origin: ORIGIN },
   };
   return { scope: scope as unknown as WorkerScope, listeners, raw: scope };
 }
@@ -80,7 +81,8 @@ function dispatchFetch(
   init: { mode?: RequestMode; method?: string } = {},
 ): Promise<Response> | undefined {
   let responded: Promise<Response> | undefined;
-  const request = new Request(`${ORIGIN}${path}`, { method: init.method });
+  const url = path.startsWith("https://") ? path : `${ORIGIN}${path}`;
+  const request = new Request(url, { method: init.method });
   Object.defineProperty(request, "mode", { value: init.mode ?? "cors" });
   (listeners.get("fetch") as (event: unknown) => void)({
     request,
@@ -213,6 +215,14 @@ describe("fetch", () => {
     await dispatchFetch(listeners, `${BASE}broken.js`);
 
     expect(await cacheStorage.match(`${BASE}broken.js`)).toBeUndefined();
+  });
+
+  it("leaves requests to other origins to the network", () => {
+    const { listeners } = setup();
+
+    expect(
+      dispatchFetch(listeners, "https://coverartarchive.org/front-250"),
+    ).toBeUndefined();
   });
 
   it("ignores non-GET requests", () => {

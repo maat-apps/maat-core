@@ -6,7 +6,10 @@
 // Strategy: precache the app shell and every build asset on install;
 // network-first for navigations and manifest.json (a deploy or manifest edit
 // lands on the next launch), cache-first for everything else (Vite's assets
-// are content-hashed). A new worker waits until the app sends
+// are content-hashed). Only the app's own origin: a request to another
+// server (a cover image, a search API) goes straight to the network — the
+// app decides what of it to keep, and cache-first would freeze API answers
+// and fill the cache with images forever. A new worker waits until the app sends
 // SKIP_WAITING_MESSAGE, so an open tab never loses its loaded chunks.
 
 /** What vite-plugin-pwa's injectManifest puts in `self.__WB_MANIFEST`. */
@@ -41,6 +44,7 @@ export type WorkerScope = {
   ): void;
   skipWaiting(): Promise<void>;
   clients: { claim(): Promise<void> };
+  location: { origin: string };
 };
 
 export type AppWorkerOptions = {
@@ -139,6 +143,7 @@ export function registerAppWorker(
     if (event.request.method !== "GET") return;
     const url = new URL(event.request.url);
     if (url.protocol !== "http:" && url.protocol !== "https:") return;
+    if (url.origin !== scope.location.origin) return;
 
     // manifest.json never changes URL when its content does, so cache-first
     // would serve a stale name/icon until the next cacheName bump.
