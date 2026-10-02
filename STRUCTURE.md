@@ -166,6 +166,14 @@ changes once its PR has merged — cut a fresh one instead.
   production build, not the dev server.
 - Both split by what they actually exercise, not by mechanical coverage
   targets.
+- **Shared features are tested once, in their package.** A component's or
+  module's own behavior — the lock screen and its escape hatch, MobileGate
+  per viewport, a drawer's swipe and back dismissal, the font loading,
+  `useSmartBack` — is tested in `@maat-apps/ui` / `@maat-apps/core`, where
+  layout, gestures and fonts run in a real Chromium (Vitest browser mode,
+  `packages/ui/tests/browser/`). An app's e2e only checks what a package
+  can't: that the app wired the feature in (e.g. the lock persists in its
+  database across a reload), never the feature's behavior again.
 - Details and known traps: [`docs/testing-unit.md`](./docs/testing-unit.md)
   (coverage scope, `isolate: false`, fake IndexedDB, RTL cleanup) and
   [`docs/testing-e2e.md`](./docs/testing-e2e.md) (device projects, WebKit

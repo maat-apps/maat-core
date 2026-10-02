@@ -40,6 +40,11 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      # @maat-apps/ui's browser-mode tests (packages/ui/tests/browser) run
+      # in a real Chromium.
+      - name: Install Chromium for browser tests
+        run: npx playwright install --with-deps chromium
+
       - name: Unit tests
         run: npm test
 
