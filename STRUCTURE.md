@@ -49,13 +49,19 @@ e2e/            # Playwright specs + e2e/utils.ts
   own chunk.
 - Views read the target id from a `:id` path param via `useParams`.
   Drilling deeper (list → detail → edit) is a plain forward `navigate(...)`.
-- Returning uses a `useSmartBack(fallback)` hook: every route is also a
+- Returning uses `useSmartBack(fallback)` from `@maat-apps/ui/smart-back`
+  (never a local copy, never a plain `navigate(parent)`): every route is also a
   valid deep link (hard refresh, PWA relaunch, a bookmark), so a "Back"
   action can't assume a real history entry sits behind it. The hook pops
   real history when the current location was actually pushed (React
   Router's `location.key !== "default"`) and replaces to `fallback`
   otherwise — so repeated visit/return round trips don't grow the stack,
   and native back keeps landing where a header's back arrow would.
+- After a form: saving an edit calls the same `back()`, returning to the
+  screen the form was opened from; creating is a forward step,
+  `navigate(newDetail, { replace: true })`, so the new screen replaces the
+  form's history entry. Deleting calls `back()` when the screen behind
+  still exists, and replaces to the list when it showed the deleted item.
 - A component used by 2+ views lives in `src/components/`, not a view
   folder.
 
