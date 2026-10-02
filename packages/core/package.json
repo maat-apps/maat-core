@@ -1,6 +1,6 @@
 {
   "name": "@maat-apps/core",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Browser-platform plumbing shared by maat-apps apps: storage, encryption, validation, backups, i18n, service worker, app lock, app update and install prompt. Only /i18n and /install use React.",
   "type": "module",
   "license": "MIT",
