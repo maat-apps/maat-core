@@ -40,7 +40,7 @@ export function buildPackageJson(appName, desktop = false) {
     dependencies: {
       "@base-ui/react": "^1.8.0",
       "@maat-apps/core": "^0.4.0",
-      "@maat-apps/ui": "^0.7.0",
+      "@maat-apps/ui": "^0.8.0",
       react: "^19",
       "react-dom": "^19",
       "react-router": "^7",

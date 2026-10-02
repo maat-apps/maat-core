@@ -5,14 +5,14 @@
      @import "tailwindcss";
      @import "@maat-apps/ui/theme.css";
 
+   and load the font from the app's JS entry (main.tsx):
+
+     import "@maat-apps/ui/font";
+
    Everything @maat-apps/ui's components rely on is here: the color, radius
    and font tokens, the `phone-sized` variant (MobileGate) and the
    `animate-progress-check-pop` animation (ProgressRing). An app only adds
    what's genuinely its own on top. */
-
-/* Self-hosted, never fetched from Google Fonts at runtime. A true variable
-   font, which arbitrary Tailwind weights like `font-semibold` rely on. */
-@import "@fontsource-variable/outfit";
 
 @custom-variant dark (&:is(.dark *));
 

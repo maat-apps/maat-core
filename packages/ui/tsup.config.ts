@@ -15,6 +15,7 @@ export default defineConfig({
     "src/empty-state.tsx",
     "src/fab-button.tsx",
     "src/field.tsx",
+    "src/font.ts",
     "src/input.tsx",
     "src/list-row.tsx",
     "src/mobile-gate.tsx",
@@ -33,7 +34,13 @@ export default defineConfig({
   splitting: true,
   sourcemap: true,
   clean: true,
-  external: ["react", "react-dom", "@base-ui/react", /^@dnd-kit\//],
+  external: [
+    "react",
+    "react-dom",
+    "@base-ui/react",
+    /^@dnd-kit\//,
+    /^@fontsource-variable\//,
+  ],
   // date-picker.tsx ships alongside a plain CSS file (not imported from the
   // component itself — a consuming app opts in the same way it opts into
   // progress-ring's keyframe or mobile-gate's Tailwind variant, per this

@@ -1,13 +1,16 @@
 {
   "name": "@maat-apps/ui",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Shared UI components for maat-apps repos — extracted from routines, per maat-apps/maat-core#3.",
   "type": "module",
   "license": "MIT",
   "files": [
     "dist"
   ],
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/font.js",
+    "./dist/*.css"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -109,6 +112,10 @@
     "./textarea": {
       "types": "./dist/textarea.d.ts",
       "import": "./dist/textarea.js"
+    },
+    "./font": {
+      "types": "./dist/font.d.ts",
+      "import": "./dist/font.js"
     },
     "./theme.css": "./dist/theme.css"
   },

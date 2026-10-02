@@ -149,8 +149,15 @@ the gate shape.
   @import "@maat-apps/ui/date-picker.css"; /* only with date-picker.tsx */
   @source "../node_modules/@maat-apps/ui/dist"; /* relative to this file */
   ```
-  `theme.css` brings the Outfit font (`@fontsource-variable/outfit`, a
-  dependency of this package, self-hosted), the shadcn `base-nova` color/
+  and your JS entry (`main.tsx`) loads the font:
+  ```ts
+  import "@maat-apps/ui/font";
+  ```
+  `@maat-apps/ui/font` brings Outfit (`@fontsource-variable/outfit`, a
+  dependency of this package, self-hosted). It must be a JS import:
+  Tailwind inlines a CSS `@import` without rebasing its relative `url()`s,
+  so importing the font from `theme.css` never got the font files into the
+  build (#78). `theme.css` brings the shadcn `base-nova` color/
   radius/font tokens with a true-black background and white accent, base
   styles, the `phone-sized:` variant `mobile-gate.tsx` needs and the
   `animate-progress-check-pop` animation `progress-ring.tsx` uses. Don't
