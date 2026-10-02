@@ -115,6 +115,11 @@ everything from one barrel for convenience.
   erase warning when the lock encrypts). Takes `@maat-apps/core/lock`'s
   `AppLock`, the stored enrolment, a `ready` flag (settings loaded) and the
   app's translated `labels`.
+- `smart-back.ts` — `useSmartBack(fallback)`, the "Back" action for an
+  app bar: pops history after an in-app navigation, replaces to
+  `fallback` on a deep link (refresh, PWA relaunch, bookmark), where
+  popping would leave the app. Not in the barrel (`@maat-apps/ui`): import
+  `@maat-apps/ui/smart-back`, so apps without `react-router` never load it.
 - `empty-state.tsx` — a centered "nothing here" message with an optional
   call-to-action button.
 
@@ -134,7 +139,8 @@ the gate shape.
   they're peers rather than bundled. `@dnd-kit/sortable` is an optional
   peer, only needed if you use `drag-handle.tsx`; `sortable-list.tsx` also
   needs `@dnd-kit/core`, `@dnd-kit/modifiers` and `@dnd-kit/utilities`
-  (all optional peers).
+  (all optional peers). `react-router` (^7) is an optional peer, only
+  needed for `smart-back.ts`.
   `class-variance-authority`, `clsx`, `tailwind-merge`, `date-fns`,
   `@daypicker/react`, `recharts`, and `@phosphor-icons/react` are regular
   dependencies of this package — you don't need to install them yourself.
