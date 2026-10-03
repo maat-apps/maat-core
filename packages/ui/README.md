@@ -147,14 +147,15 @@ Testing section).
 
 - **Peer dependencies**: `react`, `react-dom` (^19), `@base-ui/react`
   (^1.8.0) — required, must be a single shared instance across the app, so
-  they're peers rather than bundled. `@dnd-kit/sortable` is an optional
-  peer, only needed if you use `drag-handle.tsx`; `sortable-list.tsx` also
-  needs `@dnd-kit/core`, `@dnd-kit/modifiers` and `@dnd-kit/utilities`
-  (all optional peers). `react-router` (^7) is an optional peer, only
-  needed for `smart-back.ts`.
+  they're peers rather than bundled. `react-router` (^7) is an optional
+  peer, only needed for `smart-back.ts`.
   `class-variance-authority`, `clsx`, `tailwind-merge`, `date-fns`,
-  `@daypicker/react`, `recharts`, and `@phosphor-icons/react` are regular
-  dependencies of this package — you don't need to install them yourself.
+  `@daypicker/react`, `recharts`, `@phosphor-icons/react` and the
+  `@dnd-kit` packages (`core`, `modifiers`, `sortable`, `utilities`, used by
+  `drag-handle.tsx` and `sortable-list.tsx`) are regular dependencies of
+  this package — you don't need to install them yourself. An app that also
+  imports `@dnd-kit` directly should list the same packages itself, so npm
+  keeps one copy shared with this package.
 - **The theme**: every Ma'at app looks the same — true black + white on
   Outfit — so the tokens ship here. Your Tailwind entry CSS imports the
   theme, scans this package's compiled output (or classes used only
