@@ -92,19 +92,8 @@ rmSync(path.join(targetDir, "playwright.config.desktop.ts"), {
   force: true,
 });
 
-// 3. Shared configs, copied (not installed — no published package yet).
-copyDir(
-  path.join(repoRoot, "configs", "eslint"),
-  path.join(targetDir, "configs", "eslint"),
-);
-copyDir(
-  path.join(repoRoot, "configs", "typescript"),
-  path.join(targetDir, "configs", "typescript"),
-);
-copyFileSync(
-  path.join(repoRoot, "configs", "prettier", "base.json"),
-  path.join(targetDir, ".prettierrc.json"),
-);
+// 3. shadcn config, copied; ESLint/Prettier/TypeScript come from the
+// @maat-apps/config package.
 copyDir(
   path.join(repoRoot, "configs", "shadcn"),
   path.join(targetDir, "configs", "shadcn"),
