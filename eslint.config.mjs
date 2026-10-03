@@ -1,7 +1,7 @@
 // Lints this repo with the same shared base it ships to apps
-// (configs/eslint/base.mjs), so a rule change there is exercised here first.
+// (packages/config), so a rule change there is exercised here first.
 import { defineConfig, globalIgnores } from "eslint/config";
-import { baseConfig } from "./configs/eslint/base.mjs";
+import { baseConfig } from "./packages/config/eslint.mjs";
 
 export default defineConfig([
   baseConfig,

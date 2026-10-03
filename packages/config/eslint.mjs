@@ -1,9 +1,7 @@
-// Shared ESLint base for a Vite + React + TypeScript maat-apps repo.
-// Copy this file into a new repo (there's no published package yet — see
-// maat-apps/maat-core#18) and import it from that repo's own
-// eslint.config.mjs, adding repo-specific overrides after it rather than
-// editing this file in place. Extracted from routines' eslint.config.mjs,
-// which stays the reference implementation — see maat-apps/maat-core#1.
+// Shared ESLint base for a Vite + React + TypeScript maat-apps repo. Import
+// `baseConfig` from the repo's own eslint.config.mjs and add repo-specific
+// overrides after it. Extracted from routines' eslint.config.mjs — see
+// maat-apps/maat-core#1.
 import js from "@eslint/js";
 import prettier from "eslint-plugin-prettier/recommended";
 import reactHooks from "eslint-plugin-react-hooks";

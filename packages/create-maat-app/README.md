@@ -26,11 +26,10 @@ node packages/create-maat-app/bin/cli.mjs <app-name> [--desktop]
 - A starter `CLAUDE.md`/`AGENTS.md` and `README.md` linking to
   maat-core's `STRUCTURE.md` and [`VERIFICATION.md`](../../VERIFICATION.md)
   — linked, not copied, so the new repo never carries a stale snapshot.
-- `configs/eslint`, `configs/typescript`, `configs/shadcn` copied from this
-  repo's own `configs/` (plus `.prettierrc.json`, `eslint.config.mjs`,
-  `tsconfig.*.json`, `components.json` wired to use them) — copy, not
-  install, since there's no published `@maat-apps/*` config package yet
-  (see `../../configs/README.md`).
+- `eslint.config.mjs`, `prettier.config.mjs` and `tsconfig.*.json` that
+  use [`@maat-apps/config`](../config) (a devDependency, so the lint and
+  format plugins come with it), and `configs/shadcn` plus `components.json`
+  copied from this repo's own `configs/`.
 - A `.claude/` tooling baseline: the ecosystem's Claude Code standard from
   [`configs/claude`](../../configs/claude) — `/open-pr` and
   `/pr-description` (close a matching Issue, merge once CI is green) and

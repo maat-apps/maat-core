@@ -25,8 +25,11 @@ behind them exists here.
   [`testing-unit.md`](./docs/testing-unit.md) and
   [`testing-e2e.md`](./docs/testing-e2e.md) (Vitest/Playwright conventions
   and known traps).
-- [`configs/`](./configs) — shared ESLint, Prettier, and base TypeScript
-  config, extracted from `routines`. See its own README for how to use them.
+- [`configs/`](./configs) — files an app copies into itself: the Claude
+  Code standard, CI workflows and the shadcn config. See its own README.
+- [`packages/config`](./packages/config) — `@maat-apps/config`, the shared
+  ESLint, Prettier and base TypeScript config (with the plugins they load
+  as dependencies), extracted from `routines`.
 - [`packages/ui`](./packages/ui) — the real, installable `@maat-apps/ui`
   package (drawer, app bar, progress ring, and a few others), extracted
   from `routines`. See its own README for what's there, the setup a
@@ -42,8 +45,8 @@ behind them exists here.
 ## Development
 
 - `npm run lint` / `lint:fix` — ESLint, using this repo's own shared base
-  (`configs/eslint/base.mjs`) so changes to it are exercised here first.
-- `npm run format` / `format:check` — Prettier, with `configs/prettier`'s
+  (`packages/config`) so changes to it are exercised here first.
+- `npm run format` / `format:check` — Prettier, with `packages/config`'s
   shared options (minus Tailwind class sorting, which needs an app's own
   stylesheet — see `prettier.config.mjs`).
 - `npm run typecheck` / `test` / `build` — every workspace that defines
