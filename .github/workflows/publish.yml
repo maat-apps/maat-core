@@ -25,7 +25,7 @@ on:
   workflow_dispatch:
     inputs:
       package:
-        description: "Workspace package directory name under packages/ (e.g. ui, core)"
+        description: "Workspace package directory name under packages/ (e.g. ui, core, config)"
         required: true
         type: string
 

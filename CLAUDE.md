@@ -8,11 +8,12 @@ and the npm workspaces under `packages/`. See `README.md` for the map.
 
 ## Packages
 
-| Package                             | What                                                     |
-| ----------------------------------- | -------------------------------------------------------- |
-| `packages/ui` → `@maat-apps/ui`     | Shared React components (shadcn `base-nova`)             |
-| `packages/core` → `@maat-apps/core` | Non-UI plumbing: storage, crypto, lock, i18n, SW, update |
-| `packages/create-maat-app`          | Scaffolding CLI for a new app                            |
+| Package                                 | What                                                     |
+| --------------------------------------- | -------------------------------------------------------- |
+| `packages/ui` → `@maat-apps/ui`         | Shared React components (shadcn `base-nova`)             |
+| `packages/core` → `@maat-apps/core`     | Non-UI plumbing: storage, crypto, lock, i18n, SW, update |
+| `packages/config` → `@maat-apps/config` | Shared ESLint, Prettier and TypeScript base configs      |
+| `packages/create-maat-app`              | Scaffolding CLI for a new app                            |
 
 Consumers: `maat-apps/routines` and `maat-apps/trainer`. A change here is
 only half done until they use it — follow up with a PR in each app.
@@ -20,7 +21,7 @@ only half done until they use it — follow up with a PR in each app.
 ## Commands
 
 - `npm run lint` / `lint:fix` — ESLint with this repo's own
-  `configs/eslint/base.mjs`.
+  `packages/config/eslint.mjs`.
 - `npm run format` / `format:check` — Prettier (`prettier.config.mjs`: the
   shared config minus Tailwind class sorting, which needs an app's
   stylesheet).

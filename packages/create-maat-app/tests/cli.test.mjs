@@ -125,14 +125,21 @@ describe("create-maat-app", () => {
       );
     });
 
-    it("copies the shared configs", () => {
-      for (const file of [
-        ".prettierrc.json",
-        "components.json",
-        path.join("configs", "eslint", "base.mjs"),
-      ]) {
-        expect(existsSync(path.join(appDir, file)), file).toBe(true);
-      }
+    it("uses @maat-apps/config for ESLint, Prettier and TypeScript", () => {
+      const { devDependencies } = JSON.parse(read(appDir, "package.json"));
+
+      expect(Object.keys(devDependencies)).toContain("@maat-apps/config");
+      expect(read(appDir, "eslint.config.mjs")).toContain(
+        "@maat-apps/config/eslint",
+      );
+      expect(read(appDir, "prettier.config.mjs")).toContain(
+        "@maat-apps/config/prettier",
+      );
+      expect(read(appDir, "tsconfig.app.json")).toContain(
+        "@maat-apps/config/tsconfig.base.json",
+      );
+      expect(existsSync(path.join(appDir, "configs", "eslint"))).toBe(false);
+      expect(existsSync(path.join(appDir, "components.json"))).toBe(true);
       expect(
         existsSync(path.join(appDir, "playwright.config.desktop.ts")),
       ).toBe(false);
