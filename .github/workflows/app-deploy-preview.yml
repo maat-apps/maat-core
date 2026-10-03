@@ -6,18 +6,20 @@ name: App PR preview
 #
 # An app calls it from its own .github/workflows/deploy-preview.yml,
 # manually dispatched with the PR number (previews cost CI minutes, so
-# they're on demand, not per push), with permissions contents/pages/
+# they're on demand, not per push; the input is a string because the dispatch
+# API only accepts strings, and fromJSON turns it into this workflow's number),
+# with permissions contents/pages/
 # pull-requests: write + id-token: write and the `pages` concurrency group:
 #
 #   on:
 #     workflow_dispatch:
 #       inputs:
-#         pr_number: { description: "PR number", required: true, type: number }
+#         pr_number: { description: "PR number", required: true, type: string }
 #   jobs:
 #     preview:
 #       uses: maat-apps/maat-core/.github/workflows/app-deploy-preview.yml@main
 #       with:
-#         pr-number: ${{ inputs.pr_number }}
+#         pr-number: ${{ fromJSON(inputs.pr_number) }}
 on:
   workflow_call:
     inputs:
