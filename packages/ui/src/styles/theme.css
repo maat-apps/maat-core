@@ -10,8 +10,9 @@
      import "@maat-apps/ui/font";
 
    Everything @maat-apps/ui's components rely on is here: the color, radius
-   and font tokens, the `phone-sized` variant (MobileGate) and the
-   `animate-progress-check-pop` animation (ProgressRing). An app only adds
+   and font tokens, the `phone-sized` variant (MobileGate), the `data-*`
+   state variants and the `animate-progress-check-pop` animation
+   (ProgressRing). An app only adds
    what's genuinely its own on top. */
 
 @custom-variant dark (&:is(.dark *));
@@ -22,6 +23,70 @@
    `@media` — one shared `@media (a), (b)` silently drops everything after
    the first comma. */
 @custom-variant phone-sized (@media (max-width: 481px), @media (max-height: 481px) and (orientation: landscape));
+
+/* The data-attribute variants the components rely on (Base UI and Radix
+   state attributes: `data-checked:`, `data-disabled:`, ...). They used to
+   come from the `shadcn` package's tailwind.css; defined here so apps don't
+   depend on `shadcn` (run it through npx instead). */
+@custom-variant data-open {
+  &:where([data-state="open"]),
+  &:where([data-open]:not([data-open="false"])) {
+    @slot;
+  }
+}
+
+@custom-variant data-closed {
+  &:where([data-state="closed"]),
+  &:where([data-closed]:not([data-closed="false"])) {
+    @slot;
+  }
+}
+
+@custom-variant data-checked {
+  &:where([data-state="checked"]),
+  &:where([data-checked]:not([data-checked="false"])) {
+    @slot;
+  }
+}
+
+@custom-variant data-unchecked {
+  &:where([data-state="unchecked"]),
+  &:where([data-unchecked]:not([data-unchecked="false"])) {
+    @slot;
+  }
+}
+
+@custom-variant data-selected {
+  &:where([data-selected="true"]) {
+    @slot;
+  }
+}
+
+@custom-variant data-disabled {
+  &:where([data-disabled="true"]),
+  &:where([data-disabled]:not([data-disabled="false"])) {
+    @slot;
+  }
+}
+
+@custom-variant data-active {
+  &:where([data-state="active"]),
+  &:where([data-active]:not([data-active="false"])) {
+    @slot;
+  }
+}
+
+@custom-variant data-horizontal {
+  &:where([data-orientation="horizontal"]) {
+    @slot;
+  }
+}
+
+@custom-variant data-vertical {
+  &:where([data-orientation="vertical"]) {
+    @slot;
+  }
+}
 
 @theme inline {
   --color-background: var(--background);
