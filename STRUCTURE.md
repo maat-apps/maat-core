@@ -76,6 +76,12 @@ e2e/            # Playwright specs + e2e/utils.ts
   and imported right after Tailwind. Apps don't redefine the tokens or pick
   another typeface or accent color; they only add genuinely app-specific
   styles on top.
+- **Touch targets.** Every interactive element a user taps — inputs,
+  textareas, selects (trigger and options), date pickers, buttons, switches,
+  list rows, chips — gets at least 44px of hit area, and fields sharing a
+  form share one height. An app that sets a larger field height (trainer:
+  3rem) applies it to all of these, not to `Input` alone; the visual size
+  may stay small if padding or a pseudo-element extends the hit area.
 - Always import through the aliases `components.json` declares (`utils`,
   `ui`, `components`, `lib`, `hooks`) rather than straight from an
   underlying package, so a future `npx shadcn add` or hand-adjustment
