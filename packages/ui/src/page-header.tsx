@@ -11,8 +11,8 @@ import { cn } from "./cn";
 // line up with the rest of the page. Callers must add top padding to their
 // own content wrapper equal to this header's rendered height (pt-27) —
 // `fixed` removes it from document flow entirely, unlike `sticky`, which
-// still reserves its own space. A downward box-shadow (not a gradient-fade
-// div) marks the edge between the header and scrolling content underneath.
+// still reserves its own space. No shadow: the header's own background is
+// the only edge between it and the content scrolling underneath.
 export function PageHeader({
   children,
   className,
@@ -22,10 +22,7 @@ export function PageHeader({
 }) {
   return (
     <header
-      className={cn(
-        "bg-background fixed inset-x-0 top-0 z-10 shadow-[0_16px_32px_-4px_oklch(0_0_0/50%)]",
-        className,
-      )}
+      className={cn("bg-background fixed inset-x-0 top-0 z-10", className)}
     >
       <div className="mx-auto flex h-27 w-[min(100%,480px)] items-center justify-between gap-4 px-5">
         {children}
