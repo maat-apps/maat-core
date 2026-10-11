@@ -90,8 +90,8 @@ everything from one barrel for convenience.
   `Input.dispatchTouchEvent`, synthetic mouse drags don't dismiss it.
 - `confirm-drawer.tsx` — a destructive-action confirmation bottom sheet
   built on `drawer.tsx`.
-- `app-bar.tsx` — back-button + title + optional action header, built on
-  `page-header.tsx`.
+- `app-bar.tsx` — back-button + optional title + optional action header,
+  built on `page-header.tsx`.
 - `page-header.tsx` — the fixed, edge-to-edge sticky header shell any
   screen's own header (`AppBar` or otherwise) sits in, plus the shared
   heading styles: `PageTitle` (a screen's main title) and `SectionTitle`
