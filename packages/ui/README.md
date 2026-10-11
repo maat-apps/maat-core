@@ -90,10 +90,12 @@ everything from one barrel for convenience.
   `Input.dispatchTouchEvent`, synthetic mouse drags don't dismiss it.
 - `confirm-drawer.tsx` — a destructive-action confirmation bottom sheet
   built on `drawer.tsx`.
-- `app-bar.tsx` — back-button + title + optional action header, built on
-  `page-header.tsx`.
+- `app-bar.tsx` — back-button + optional title + optional action header,
+  built on `page-header.tsx`.
 - `page-header.tsx` — the fixed, edge-to-edge sticky header shell any
-  screen's own header (`AppBar` or otherwise) sits in.
+  screen's own header (`AppBar` or otherwise) sits in, plus the shared
+  heading styles: `PageTitle` (a screen's main title) and `SectionTitle`
+  (the small, muted label over a group, as in Keep).
 - `drag-handle.tsx` — the grab handle for a `@dnd-kit`-sortable row.
 - `sortable-list.tsx` — `SortableList` (a vertical drag-to-reorder list
   that reports the new order as ids via `onReorder` and renders rows with
@@ -101,12 +103,13 @@ everything from one barrel for convenience.
   and `useDragSensors` (pointer/touch/keyboard, with a touch delay so a
   swipe still scrolls), `SortableListRow` (a `ListRow`-style card with a
   `DragHandle`) and `reorderIds` (the pure reorder step).
-- `list-row.tsx` — `ListRow`, a tappable card row for plain lists; needs
+- `list-row.tsx` — `ListRow`, a tappable bordered card row (as in Keep) for
+  plain lists; needs
   no `@dnd-kit`. In both row components the content is `children`, so
   each app keeps its own.
 - `progress-ring.tsx` — a compact circular completed/total indicator.
-- `fab-button.tsx` / `reset-button.tsx` — floating action button and a
-  secondary action button, sharing one sizing/shape convention.
+- `fab-button.tsx` / `reset-button.tsx` — the 88px floating action button
+  (rounded as in Keep) and a secondary action button.
 - `mobile-gate.tsx` — renders `children` for phone-sized viewports, a
   message otherwise.
 - `app-lock-gate.tsx` — the app lock screen: renders `children` once the

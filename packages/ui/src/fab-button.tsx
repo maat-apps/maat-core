@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Button } from "./button";
 import { cn } from "./cn";
 
-/** Shared shape for a floating circular/square action button. */
+/** Shared shape for the floating action button: 88px, rounded as in Keep. */
 export function FabButton({
   onClick,
   ariaLabel,
@@ -20,7 +20,7 @@ export function FabButton({
       size="icon-lg"
       aria-label={ariaLabel}
       onClick={onClick}
-      className={cn("h-13 w-13 rounded-lg", className)}
+      className={cn("h-22 w-22 rounded-3xl", className)}
     >
       {children}
     </Button>
