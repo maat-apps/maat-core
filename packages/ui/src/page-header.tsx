@@ -30,3 +30,32 @@ export function PageHeader({
     </header>
   );
 }
+
+/** A screen's main title, e.g. the app name on its home screen. */
+export function PageTitle({ children }: { children: ReactNode }) {
+  return (
+    <h1 className="font-heading m-0 text-3xl leading-[1.05] font-bold tracking-tight">
+      {children}
+    </h1>
+  );
+}
+
+/** A small, muted label over a group of content, as in Keep ("Pinned"). */
+export function SectionTitle({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <h2
+      className={cn(
+        "text-muted-foreground m-0 px-1 text-sm font-medium",
+        className,
+      )}
+    >
+      {children}
+    </h2>
+  );
+}

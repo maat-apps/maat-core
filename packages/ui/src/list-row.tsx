@@ -21,7 +21,7 @@ export function ListRow({
       type="button"
       className={cn(
         listRowCardClass,
-        "active:bg-muted [&>svg]:text-muted-foreground gap-3.5 border-0 px-4 py-3.5",
+        "active:bg-muted [&>svg]:text-muted-foreground gap-3.5 px-4 py-3.5",
         className,
       )}
       onClick={onClick}
