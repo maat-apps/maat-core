@@ -4,6 +4,7 @@ import { decryptJson, encryptJson, randomBytes } from "../src/crypto";
 import {
   createAppLock,
   createKeyHolder,
+  DEFAULT_RELOCK_AFTER_MS,
   parseLockEnrolment,
   type LockEnrolment,
 } from "../src/lock";
@@ -334,6 +335,116 @@ describe("disableAndErase", () => {
     data.erase.mockRejectedValue(new Error("disk"));
 
     await expect(lock.disableAndErase()).rejects.toThrow("disk");
+    expect(lock.isSessionUnlocked()).toBe(true);
+  });
+});
+
+describe("relock", () => {
+  /** A stand-in document whose visibility the test flips. */
+  function stubDocument() {
+    const target = new EventTarget();
+    const fake = {
+      visibilityState: "visible" as DocumentVisibilityState,
+      addEventListener: target.addEventListener.bind(target),
+    };
+    vi.stubGlobal("document", fake);
+    return (state: DocumentVisibilityState) => {
+      fake.visibilityState = state;
+      target.dispatchEvent(new Event("visibilitychange"));
+    };
+  }
+
+  function unlockedLock(relockAfterMs?: () => number | null) {
+    const setVisibility = stubDocument();
+    const lock = createAppLock({
+      name: "Test",
+      keyInfo: "test-data-v1",
+      keyHolder: createKeyHolder(),
+      saveEnrolment: () => {},
+      data: { rewrite: vi.fn(), erase: vi.fn() },
+      relockAfterMs,
+    });
+    lock.disable();
+    return { lock, setVisibility };
+  }
+
+  function leaveFor(
+    setVisibility: (state: DocumentVisibilityState) => void,
+    ms: number,
+  ) {
+    setVisibility("hidden");
+    vi.advanceTimersByTime(ms);
+    setVisibility("visible");
+  }
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("locks the session and notifies listeners", () => {
+    const { lock } = unlockedLock();
+    const listener = vi.fn();
+    lock.subscribeToUnlock(listener);
+
+    lock.relock();
+
+    expect(lock.isSessionUnlocked()).toBe(false);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it("stays unlocked after a short trip away", () => {
+    vi.useFakeTimers();
+    const { lock, setVisibility } = unlockedLock();
+
+    leaveFor(setVisibility, DEFAULT_RELOCK_AFTER_MS - 1);
+
+    expect(lock.isSessionUnlocked()).toBe(true);
+  });
+
+  it("locks after the default delay in the background", () => {
+    vi.useFakeTimers();
+    const { lock, setVisibility } = unlockedLock();
+
+    leaveFor(setVisibility, DEFAULT_RELOCK_AFTER_MS);
+
+    expect(lock.isSessionUnlocked()).toBe(false);
+  });
+
+  it("locks as soon as the app is hidden with a zero delay", () => {
+    const { lock, setVisibility } = unlockedLock(() => 0);
+
+    setVisibility("hidden");
+
+    expect(lock.isSessionUnlocked()).toBe(false);
+  });
+
+  it("never locks in the background with a null delay", () => {
+    vi.useFakeTimers();
+    const { lock, setVisibility } = unlockedLock(() => null);
+
+    leaveFor(setVisibility, 24 * 60 * 60 * 1000);
+
+    expect(lock.isSessionUnlocked()).toBe(true);
+  });
+
+  it("ignores the page being hidden by its own prompt", async () => {
+    const { lock, setVisibility } = unlockedLock(() => 0);
+    let finishPrompt: (credential: unknown) => void = () => {};
+    stubCredentials({
+      get: () => new Promise((resolve) => (finishPrompt = resolve)),
+    });
+    const verifying = lock.verify({
+      credentialId: "AQID",
+      userId: "AQID",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      encryptionSupported: false,
+    });
+
+    setVisibility("hidden");
+    setVisibility("visible");
+    finishPrompt(fakeCredential());
+
+    await expect(verifying).resolves.toBe(true);
     expect(lock.isSessionUnlocked()).toBe(true);
   });
 });

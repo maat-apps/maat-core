@@ -3,6 +3,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useRef,
   useState,
   useSyncExternalStore,
 } from "react";
@@ -19,12 +20,12 @@ export type AppLockGateLock<Enrolment> = {
   disable: () => void;
   disableAndErase: () => Promise<void>;
   isSessionUnlocked: () => boolean;
+  /** Notified when the session is unlocked and when it locks again. */
   subscribeToUnlock: (listener: () => void) => () => void;
 };
 
 export type AppLockGateLabels = {
-  lockedTitle: string;
-  lockedDescription: string;
+  /** The lock screen's accessible name — it shows no text of its own. */
   unlock: string;
   unlockFailed: string;
   turnOffLock: string;
@@ -35,6 +36,10 @@ export type AppLockGateLabels = {
 };
 
 const lockedOnServer = () => false;
+
+// Above anything the app can portal into <body> (drawers, popovers).
+const overlayClassName =
+  "bg-background fixed inset-0 z-[2147483647] overflow-y-auto";
 
 function LockScreen({
   title,
@@ -58,10 +63,52 @@ function LockScreen({
 }
 
 /**
+ * Asks for the authenticator by itself whenever the lock screen is shown or
+ * the user comes back to it — once per arrival, so cancelling the prompt
+ * doesn't bring it straight back. Browsers that only prompt from a tap
+ * refuse it; the lock screen's tap target covers that.
+ */
+function usePromptOnArrival(locked: boolean, prompt: () => void): void {
+  useEffect(() => {
+    if (!locked) return;
+    let armed = true;
+    function tryPrompt() {
+      if (
+        !armed ||
+        document.visibilityState !== "visible" ||
+        !document.hasFocus()
+      ) {
+        return;
+      }
+      armed = false;
+      prompt();
+    }
+    function onVisibilityChange() {
+      if (document.visibilityState === "hidden") armed = true;
+      else tryPrompt();
+    }
+    tryPrompt();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("focus", tryPrompt);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("focus", tryPrompt);
+    };
+  }, [locked, prompt]);
+}
+
+/**
  * Hides the app behind the platform-authenticator prompt while a lock is
- * enrolled and this session hasn't passed it. Renders nothing until
- * `ready` — "no lock" can't be told apart from "settings not loaded yet",
- * and a locked device must never flash unlocked.
+ * enrolled and this session hasn't passed it — at launch, and again when
+ * the lock relocks after time in the background. The prompt opens by
+ * itself; the lock screen is the same for every app: a lock icon that
+ * prompts when tapped, with no text. Renders nothing until `ready` — "no
+ * lock" can't be told apart from "settings not loaded yet", and a locked
+ * device must never flash unlocked.
+ *
+ * Once the app has been shown, relocking covers it rather than unmounting
+ * it, so whatever the user was in the middle of is still there after
+ * unlocking.
  *
  * The "turn off the lock" escape hatch stays hidden until the device lets
  * the user down (a failed prompt, or no authenticator any more). When the
@@ -88,24 +135,36 @@ export function AppLockGate<
     lock.isSessionUnlocked,
     lockedOnServer,
   );
-  const [checking, setChecking] = useState(false);
+  const [appMounted, setAppMounted] = useState(false);
   const [failed, setFailed] = useState(false);
   const [showEscape, setShowEscape] = useState(false);
   const [confirmErase, setConfirmErase] = useState(false);
+  const checking = useRef(false);
 
-  const unlock = useCallback(async () => {
-    if (!enrolment) return;
-    setChecking(true);
-    setFailed(false);
-    const passed = await lock.verify(enrolment);
-    setChecking(false);
-    if (passed) return;
-    setFailed(true);
-    setShowEscape(true);
-  }, [lock, enrolment]);
+  const locked = ready && enrolment !== null && !unlocked;
+  if (ready && !locked && !appMounted) setAppMounted(true);
+
+  // A prompt the browser refused on its own (no tap yet) isn't the device
+  // letting the user down, so only a tapped one can fail.
+  const unlock = useCallback(
+    async (tapped: boolean) => {
+      if (!enrolment || checking.current) return;
+      checking.current = true;
+      setFailed(false);
+      const passed = await lock.verify(enrolment);
+      checking.current = false;
+      if (passed) setShowEscape(false);
+      if (passed || !tapped) return;
+      setFailed(true);
+      setShowEscape(true);
+    },
+    [lock, enrolment],
+  );
+  const promptByItself = useCallback(() => void unlock(false), [unlock]);
+  usePromptOnArrival(locked && !confirmErase, promptByItself);
 
   useEffect(() => {
-    if (!enrolment || unlocked) return;
+    if (!locked) return;
     let active = true;
     void lock.isSupported().then((supported) => {
       if (active && !supported) setShowEscape(true);
@@ -113,7 +172,7 @@ export function AppLockGate<
     return () => {
       active = false;
     };
-  }, [lock, enrolment, unlocked]);
+  }, [lock, locked]);
 
   function turnOffLock() {
     // A gate-only lock never encrypted anything — nothing to warn about.
@@ -125,53 +184,69 @@ export function AppLockGate<
   }
 
   if (!ready) return null;
-  if (!enrolment || unlocked) return <>{children}</>;
-
-  if (confirmErase) {
-    return (
-      <LockScreen
-        title={labels.eraseDataWarningTitle}
-        description={labels.eraseDataWarningDescription}
-      >
-        <Button
-          variant="outline"
-          className="mt-2 min-h-12.5 px-6 text-base"
-          onClick={() => void lock.disableAndErase()}
-        >
-          {labels.eraseDataConfirm}
-        </Button>
-        <Button
-          variant="ghost"
-          className="text-muted-foreground min-h-10.5"
-          onClick={() => setConfirmErase(false)}
-        >
-          {labels.eraseDataCancel}
-        </Button>
-      </LockScreen>
-    );
-  }
 
   return (
-    <LockScreen
-      title={labels.lockedTitle}
-      description={failed ? labels.unlockFailed : labels.lockedDescription}
-    >
-      <Button
-        className="mt-2 min-h-12.5 px-6 text-base"
-        disabled={checking}
-        onClick={() => void unlock()}
-      >
-        {labels.unlock}
-      </Button>
-      {showEscape && (
-        <Button
-          variant="ghost"
-          className="text-muted-foreground min-h-10.5"
-          onClick={turnOffLock}
-        >
-          {labels.turnOffLock}
-        </Button>
+    <>
+      {appMounted && (
+        <div className="contents" inert={locked}>
+          {children}
+        </div>
       )}
-    </LockScreen>
+      {locked && (
+        <div className={overlayClassName}>
+          {confirmErase ? (
+            <LockScreen
+              title={labels.eraseDataWarningTitle}
+              description={labels.eraseDataWarningDescription}
+            >
+              <Button
+                variant="outline"
+                className="mt-2 min-h-12.5 px-6 text-base"
+                onClick={() => void lock.disableAndErase()}
+              >
+                {labels.eraseDataConfirm}
+              </Button>
+              <Button
+                variant="ghost"
+                className="text-muted-foreground min-h-10.5"
+                onClick={() => setConfirmErase(false)}
+              >
+                {labels.eraseDataCancel}
+              </Button>
+            </LockScreen>
+          ) : (
+            <div className="grid min-h-dvh grid-rows-[1fr_auto]">
+              <button
+                type="button"
+                aria-label={labels.unlock}
+                className="grid place-items-center outline-none"
+                onClick={() => void unlock(true)}
+              >
+                <Lock
+                  aria-hidden="true"
+                  className="text-muted-foreground size-8"
+                />
+              </button>
+              {showEscape && (
+                <div className="grid justify-items-center gap-2 px-8 pb-12 text-center">
+                  {failed && (
+                    <p className="text-muted-foreground m-0 max-w-70 text-sm leading-normal">
+                      {labels.unlockFailed}
+                    </p>
+                  )}
+                  <Button
+                    variant="ghost"
+                    className="text-muted-foreground min-h-10.5"
+                    onClick={turnOffLock}
+                  >
+                    {labels.turnOffLock}
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </>
   );
 }

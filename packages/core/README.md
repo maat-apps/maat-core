@@ -111,7 +111,13 @@ export const appLock = createAppLock({
 encryptionKey.whenSet()`. `/update`'s `encryption: { getKey:
 encryptionKey.get }` covers the snapshot.
 - Session unlock state is memory only (`isSessionUnlocked`,
-  `subscribeToUnlock`): closing the app locks it again.
+  `subscribeToUnlock`): closing the app locks it again, and so does
+  leaving it in the background for `relockAfterMs()` (default
+  `DEFAULT_RELOCK_AFTER_MS`, 30s; `0` locks as soon as it's hidden, `null`
+  only on close — read on every hide, so back it with a setting). Hides
+  caused by the lock's own prompt don't count. `relock()` locks by hand.
+  Relocking is a UI gate only: the key stays in memory, since storage
+  still writes with it.
 
 ## `locale` + `i18n`
 

@@ -113,9 +113,11 @@ everything from one barrel for convenience.
 - `mobile-gate.tsx` — renders `children` for phone-sized viewports, a
   message otherwise.
 - `app-lock-gate.tsx` — the app lock screen: renders `children` once the
-  session passed the lock, otherwise the unlock prompt and, when the
-  device lets the user down, the "turn off the lock" escape hatch (with an
-  erase warning when the lock encrypts). Takes `@maat-apps/core/lock`'s
+  session passed the lock, otherwise a text-free lock screen (the same in
+  every app) that opens the platform prompt by itself on each arrival and
+  on tap, where the browser needs one. A relock covers the app instead of
+  unmounting it. When the device lets the user down, it adds the "turn off
+  the lock" escape hatch (with an erase warning when the lock encrypts). Takes `@maat-apps/core/lock`'s
   `AppLock`, the stored enrolment, a `ready` flag (settings loaded) and the
   app's translated `labels`.
 - `smart-back.ts` — `useSmartBack(fallback)`, the "Back" action for an
