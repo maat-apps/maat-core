@@ -5,7 +5,8 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { useEffect } from "react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   AppLockGate,
@@ -16,8 +17,6 @@ import {
 type Enrolment = { encryptionSupported: boolean };
 
 const labels: AppLockGateLabels = {
-  lockedTitle: "Locked",
-  lockedDescription: "Unlock to continue.",
   unlock: "Unlock",
   unlockFailed: "That did not work.",
   turnOffLock: "Turn off the lock",
@@ -30,10 +29,11 @@ const labels: AppLockGateLabels = {
 function fakeLock(overrides: Partial<AppLockGateLock<Enrolment>> = {}) {
   let unlocked = false;
   const listeners = new Set<() => void>();
-  const markUnlocked = () => {
-    unlocked = true;
+  const setUnlocked = (next: boolean) => {
+    unlocked = next;
     listeners.forEach((listener) => listener());
   };
+  const markUnlocked = () => setUnlocked(true);
   const lock: AppLockGateLock<Enrolment> = {
     isSupported: vi.fn(() => Promise.resolve(true)),
     verify: vi.fn(async () => {
@@ -49,7 +49,7 @@ function fakeLock(overrides: Partial<AppLockGateLock<Enrolment>> = {}) {
     },
     ...overrides,
   };
-  return lock;
+  return Object.assign(lock, { relock: () => setUnlocked(false) });
 }
 
 function renderGate(
@@ -71,6 +71,12 @@ function renderGate(
 
 const failingVerify = () => vi.fn(() => Promise.resolve(false));
 
+const unlockButton = () => screen.getByRole("button", { name: "Unlock" });
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe("AppLockGate", () => {
   it("renders nothing until ready", () => {
     const { container } = renderGate(fakeLock(), null, false);
@@ -84,17 +90,84 @@ describe("AppLockGate", () => {
     expect(screen.getByText("App content")).toBeTruthy();
   });
 
-  it("shows the lock screen while locked", () => {
-    renderGate(fakeLock(), { encryptionSupported: false });
+  it("shows a text-free lock screen while locked", () => {
+    const { container } = renderGate(fakeLock(), {
+      encryptionSupported: false,
+    });
 
-    expect(screen.getByRole("heading", { name: "Locked" })).toBeTruthy();
-    expect(screen.queryByText("App content")).toBeNull();
+    expect(unlockButton()).toBeTruthy();
+    expect(container.textContent).toBe("");
+  });
+
+  it("prompts by itself when the page has focus", async () => {
+    vi.spyOn(document, "hasFocus").mockReturnValue(true);
+    const lock = fakeLock();
+
+    renderGate(lock, { encryptionSupported: false });
+
+    expect(await screen.findByText("App content")).toBeTruthy();
+    expect(lock.verify).toHaveBeenCalledTimes(1);
+  });
+
+  it("waits for focus before prompting by itself", async () => {
+    const hasFocus = vi.spyOn(document, "hasFocus").mockReturnValue(false);
+    const lock = fakeLock();
+    renderGate(lock, { encryptionSupported: false });
+    expect(lock.verify).not.toHaveBeenCalled();
+
+    hasFocus.mockReturnValue(true);
+    fireEvent.focus(window);
+
+    expect(await screen.findByText("App content")).toBeTruthy();
+  });
+
+  it("doesn't count a prompt it opened by itself as failed", async () => {
+    vi.spyOn(document, "hasFocus").mockReturnValue(true);
+    const lock = fakeLock({ verify: failingVerify() });
+
+    renderGate(lock, { encryptionSupported: false });
+
+    await waitFor(() => expect(lock.verify).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText("That did not work.")).toBeNull();
+    fireEvent.focus(window);
+    expect(lock.verify).toHaveBeenCalledTimes(1);
+  });
+
+  it("covers the app without unmounting it when relocked", async () => {
+    const lock = fakeLock();
+    const seen = vi.fn();
+    function Probe() {
+      useEffect(() => seen(), []);
+      return <p>App content</p>;
+    }
+    render(
+      <AppLockGate
+        lock={lock}
+        enrolment={{ encryptionSupported: false }}
+        ready
+        labels={labels}
+      >
+        <Probe />
+      </AppLockGate>,
+    );
+    fireEvent.click(unlockButton());
+    await screen.findByText("App content");
+
+    act(() => lock.relock());
+
+    expect(unlockButton()).toBeTruthy();
+    expect(screen.getByText("App content").closest("[inert]")).toBeTruthy();
+    fireEvent.click(unlockButton());
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Unlock" })).toBeNull(),
+    );
+    expect(seen).toHaveBeenCalledTimes(1);
   });
 
   it("renders the app after a successful unlock", async () => {
     renderGate(fakeLock(), { encryptionSupported: false });
 
-    fireEvent.click(screen.getByRole("button", { name: "Unlock" }));
+    fireEvent.click(unlockButton());
 
     expect(await screen.findByText("App content")).toBeTruthy();
   });
@@ -107,7 +180,7 @@ describe("AppLockGate", () => {
       screen.queryByRole("button", { name: "Turn off the lock" }),
     ).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Unlock" }));
+    fireEvent.click(unlockButton());
 
     expect(await screen.findByText("That did not work.")).toBeTruthy();
     expect(
@@ -128,7 +201,7 @@ describe("AppLockGate", () => {
   it("turns a gate-only lock off without warning", async () => {
     const lock = fakeLock({ verify: failingVerify() });
     renderGate(lock, { encryptionSupported: false });
-    fireEvent.click(screen.getByRole("button", { name: "Unlock" }));
+    fireEvent.click(unlockButton());
 
     fireEvent.click(
       await screen.findByRole("button", { name: "Turn off the lock" }),
@@ -141,7 +214,7 @@ describe("AppLockGate", () => {
   it("warns before erasing an encrypting lock's data", async () => {
     const lock = fakeLock({ verify: failingVerify() });
     renderGate(lock, { encryptionSupported: true });
-    fireEvent.click(screen.getByRole("button", { name: "Unlock" }));
+    fireEvent.click(unlockButton());
     fireEvent.click(
       await screen.findByRole("button", { name: "Turn off the lock" }),
     );
@@ -165,15 +238,13 @@ describe("AppLockGate", () => {
     renderGate(fakeLock({ verify: failingVerify() }), {
       encryptionSupported: true,
     });
-    fireEvent.click(screen.getByRole("button", { name: "Unlock" }));
+    fireEvent.click(unlockButton());
     fireEvent.click(
       await screen.findByRole("button", { name: "Turn off the lock" }),
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
-    await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Locked" })).toBeTruthy(),
-    );
+    await waitFor(() => expect(unlockButton()).toBeTruthy());
   });
 });

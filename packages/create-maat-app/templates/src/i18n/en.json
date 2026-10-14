@@ -14,8 +14,6 @@
   "appLockDescription": "Ask for your fingerprint before opening.",
   "appLockUnsupported": "No fingerprint unlock on this device.",
   "appLockFailed": "Setting up the lock did not work.",
-  "lockedTitle": "This app is locked",
-  "lockedDescription": "Unlock to continue.",
   "unlock": "Unlock",
   "unlockFailed": "That did not work. Try again.",
   "turnOffLock": "Turn off the lock",

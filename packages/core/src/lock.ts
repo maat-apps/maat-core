@@ -122,7 +122,17 @@ export type AppLockOptions = {
      */
     erase: () => void | Promise<void>;
   };
+  /**
+   * How long the app may sit in the background before the lock comes back
+   * (ms), read each time it's hidden so a settings change applies at once.
+   * `0` locks as soon as it's hidden; `null` only when the app is closed.
+   * Defaults to {@link DEFAULT_RELOCK_AFTER_MS}.
+   */
+  relockAfterMs?: () => number | null;
 };
+
+/** Leaving the app for a share sheet or file picker shouldn't re-lock it. */
+export const DEFAULT_RELOCK_AFTER_MS = 30_000;
 
 export type AppLock = {
   /** True when this browser has a built-in authenticator it can prompt for. */
@@ -147,7 +157,13 @@ export type AppLock = {
   disableAndErase: () => Promise<void>;
   /** Whether this session has passed the lock (memory only). */
   isSessionUnlocked: () => boolean;
+  /** Notified whenever the session is unlocked or locked again. */
   subscribeToUnlock: (listener: () => void) => () => void;
+  /**
+   * Locks the session again. A UI gate only: the key stays in memory, since
+   * the app's data is already decrypted there and its writes still need it.
+   */
+  relock: () => void;
 };
 
 const PROMPT_TIMEOUT_MS = 60_000;
@@ -155,17 +171,66 @@ const ES256 = -7;
 const RS256 = -257;
 
 export function createAppLock(options: AppLockOptions): AppLock {
-  const { name, keyInfo, keyHolder, saveEnrolment, data } = options;
+  const {
+    name,
+    keyInfo,
+    keyHolder,
+    saveEnrolment,
+    data,
+    relockAfterMs = () => DEFAULT_RELOCK_AFTER_MS,
+  } = options;
 
-  // Closing the app locks it again. Enrolling counts as passing: the user
+  // Closing the app locks it again, and so does leaving it in the background
+  // for longer than relockAfterMs. Enrolling counts as passing: the user
   // just completed the very same platform prompt.
   let sessionUnlocked = false;
   const unlockListeners = new Set<() => void>();
+  // The platform prompt can hide the page itself — that's not leaving.
+  let prompting = false;
+  let hiddenAt: number | null = null;
 
-  function markSessionUnlocked(): void {
-    sessionUnlocked = true;
+  function setSessionUnlocked(next: boolean): void {
+    if (sessionUnlocked === next) return;
+    sessionUnlocked = next;
     for (const listener of unlockListeners) {
       listener();
+    }
+  }
+
+  function relock(): void {
+    setSessionUnlocked(false);
+  }
+
+  // Timers are throttled in a hidden page, so the delay is measured on the
+  // way back instead. "Immediately" locks on the way out, so the app
+  // switcher's snapshot is more likely to show the lock screen.
+  function onVisibilityChange(): void {
+    if (prompting || !sessionUnlocked) {
+      hiddenAt = null;
+      return;
+    }
+    const delay = relockAfterMs();
+    if (document.visibilityState === "hidden") {
+      if (delay === 0) relock();
+      else hiddenAt = delay === null ? null : Date.now();
+      return;
+    }
+    if (hiddenAt !== null && delay !== null && Date.now() - hiddenAt >= delay) {
+      relock();
+    }
+    hiddenAt = null;
+  }
+
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", onVisibilityChange);
+  }
+
+  async function withPrompt<T>(run: () => Promise<T>): Promise<T> {
+    prompting = true;
+    try {
+      return await run();
+    } finally {
+      prompting = false;
     }
   }
 
@@ -208,6 +273,10 @@ export function createAppLock(options: AppLockOptions): AppLock {
   }
 
   async function enrol(): Promise<LockEnrolment> {
+    return withPrompt(enrolWithPrompts);
+  }
+
+  async function enrolWithPrompts(): Promise<LockEnrolment> {
     const userId = randomBytes(16);
     const credential = (await navigator.credentials.create({
       publicKey: {
@@ -246,7 +315,7 @@ export function createAppLock(options: AppLockOptions): AppLock {
       ...(encryptionSupported && { prfSalt }),
     };
     saveEnrolment(enrolled);
-    markSessionUnlocked();
+    setSessionUnlocked(true);
     if (encryptionSupported) data.rewrite();
     return enrolled;
   }
@@ -254,6 +323,10 @@ export function createAppLock(options: AppLockOptions): AppLock {
   // Unlike enrolment, PRF eval rides along in the assertion itself — one
   // prompt both passes the lock and derives the key.
   async function verify(enrolled: LockEnrolment): Promise<boolean> {
+    return withPrompt(() => verifyWithPrompt(enrolled));
+  }
+
+  async function verifyWithPrompt(enrolled: LockEnrolment): Promise<boolean> {
     try {
       const salt =
         enrolled.encryptionSupported && enrolled.prfSalt
@@ -281,7 +354,7 @@ export function createAppLock(options: AppLockOptions): AppLock {
         keyHolder.set(await deriveKey(prfResult, salt, keyInfo));
       }
 
-      markSessionUnlocked();
+      setSessionUnlocked(true);
       return true;
     } catch {
       return false;
@@ -292,7 +365,7 @@ export function createAppLock(options: AppLockOptions): AppLock {
     saveEnrolment(null);
     keyHolder.set(null);
     data.rewrite();
-    markSessionUnlocked();
+    setSessionUnlocked(true);
   }
 
   async function disableAndErase(): Promise<void> {
@@ -301,7 +374,7 @@ export function createAppLock(options: AppLockOptions): AppLock {
     try {
       await data.erase();
     } finally {
-      markSessionUnlocked();
+      setSessionUnlocked(true);
     }
   }
 
@@ -312,6 +385,7 @@ export function createAppLock(options: AppLockOptions): AppLock {
     disable,
     disableAndErase,
     isSessionUnlocked: () => sessionUnlocked,
+    relock,
     subscribeToUnlock(listener) {
       unlockListeners.add(listener);
       return () => {

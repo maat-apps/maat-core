@@ -17,13 +17,9 @@ test.describe("app lock", () => {
     await expect(lockSwitch).toBeChecked();
 
     // Enrolling counts as unlocked, but that's per-session memory — a
-    // reload shows the lock screen.
+    // reload locks again, and the lock screen prompts by itself.
     await page.reload();
-    await expect(
-      page.getByRole("heading", { name: "This app is locked" }),
-    ).toBeVisible();
-
-    await page.getByRole("button", { name: "Unlock" }).click();
     await expect(page.getByRole("heading", { name: "Welcome" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Unlock" })).toBeHidden();
   });
 });
