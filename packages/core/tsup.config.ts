@@ -6,6 +6,7 @@ export default defineConfig({
     "src/crypto.ts",
     "src/i18n.ts",
     "src/install.ts",
+    "src/local.ts",
     "src/locale.ts",
     "src/lock.ts",
     "src/persisted.ts",

@@ -8,6 +8,7 @@ an app's bundle only contains what it imports.
 | ---------------------------- | ------------------------------------------------- |
 | `@maat-apps/core/storage`    | IndexedDB key-value store                         |
 | `@maat-apps/core/persisted`  | In-memory + IndexedDB store (e.g. settings)       |
+| `@maat-apps/core/local`      | An app's data: local store, backup, lock wiring   |
 | `@maat-apps/core/crypto`     | WebAuthn PRF → AES-GCM encryption, base64url      |
 | `@maat-apps/core/lock`       | App lock: WebAuthn gate + optional encryption     |
 | `@maat-apps/core/locale`     | Persisted locale store with device detection      |
@@ -204,6 +205,51 @@ The pattern from [`docs/storage.md`](../../docs/storage.md) as a store:
 `set(patch)`, `reset()`, and a separate **ready** signal (`isReady`,
 `subscribeReady`) for anything that must not treat "not loaded yet" as "the
 defaults" — e.g. an app-lock gate.
+
+## `local`
+
+The local storage pattern ([`docs/storage.md`](../../docs/storage.md)) with
+its logic included — the app supplies only its data's schema:
+
+```ts
+import {
+  createLocalBackup,
+  createLocalStore,
+  lockData,
+} from "@maat-apps/core/local";
+
+export const notesStore = createLocalStore<Note[]>({
+  storage, // from createKeyValueStore
+  key: "notes-data",
+  empty: [],
+  parse: (stored) => parseNotes(isRecord(stored) ? stored.notes : []),
+  serialize: (notes) => ({ notes }),
+  encryption: { keyHolder: encryptionKey, encrypts: lockEncrypts },
+});
+
+export const backups = createLocalBackup({
+  app: "notes",
+  version: 1,
+  store: notesStore,
+  messages, // notJson / wrongApp (/ wrongVersion)
+  snapshot: { storage, key: "notes-update-snapshot", keyHolder: encryptionKey },
+});
+
+createAppLock({ /* … */ data: lockData(notesStore, backups.lockPart) });
+```
+
+- `createLocalStore`: `getSnapshot`/`getServerSnapshot`/`subscribe` for
+  `useSyncExternalStore`, a ready signal (`isReady`, `whenLoaded`),
+  `replace`/`update` (write-through, encrypted whenever the key holder has
+  a key; writes never land out of order), `rewrite`/`erase` for the lock.
+  With an encrypting lock, the first read waits for the key; a change made
+  before that read finishes wins over what's stored.
+- `createLocalBackup`: `create`, `parse` (file text) / `parseValue`,
+  `apply`, `download`/`share`, the pre-update `snapshot` and `updateApp`.
+  `extras` adds fields next to `data` (e.g. a locale), `parseData` lets the
+  app refuse a backup, `afterApply` drops derived caches.
+- `lockData(...parts)`: the app lock's `rewrite` (each part, a failure
+  doesn't stop the rest) and `erase` (all parts).
 
 ## `update`
 
