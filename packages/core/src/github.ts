@@ -267,6 +267,8 @@ export type RepoConnection<E extends object> = LockDataPart & {
   getServerSnapshot(): null;
   subscribe(listener: () => void): () => void;
   whenLoaded(): Promise<void>;
+  /** Whether the stored connection has been read — until then "none" may just mean "not yet". */
+  isReady(): boolean;
   /** A token may only be stored encrypted: the lock is on, encrypts and is unlocked. */
   canConnect(): boolean;
   /**
@@ -295,6 +297,7 @@ export function createRepoConnection<E extends object>({
   const listeners = new Set<() => void>();
   let connection: RepoConnectionState<E> | null = null;
   let loaded: Promise<void> | null = null;
+  let ready = false;
 
   function emitChange(): void {
     for (const listener of listeners) listener();
@@ -317,10 +320,10 @@ export function createRepoConnection<E extends object>({
   }
 
   async function load(): Promise<void> {
-    // Never stored without an encrypting lock: nothing to read then.
-    if (!(await encrypts())) return;
-    await keyHolder.whenSet();
     try {
+      // Never stored without an encrypting lock: nothing to read then.
+      if (!(await encrypts())) return;
+      await keyHolder.whenSet();
       const stored = await storage.get<unknown>(key);
       const cryptoKey = keyHolder.get();
       if (cryptoKey && isEncryptedBlob(stored)) {
@@ -331,6 +334,7 @@ export function createRepoConnection<E extends object>({
     } catch {
       // Unreadable: the user connects again.
     } finally {
+      ready = true;
       emitChange();
     }
   }
@@ -370,6 +374,10 @@ export function createRepoConnection<E extends object>({
       };
     },
     whenLoaded,
+    isReady() {
+      void whenLoaded();
+      return ready;
+    },
     canConnect,
     async connect(location) {
       if (!canConnect()) {

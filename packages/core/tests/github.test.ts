@@ -395,11 +395,13 @@ describe("createRepoConnection", () => {
     });
 
     expect(connection.canConnect()).toBe(false);
+    expect(connection.isReady()).toBe(false);
     await expect(connection.connect(LOCATION)).rejects.toBeInstanceOf(
       RepoConnectionError,
     );
     await connection.whenLoaded();
     expect(connection.get()).toBeNull();
+    expect(connection.isReady()).toBe(true);
   });
 
   it("loads a stored connection once the key is set", async () => {
