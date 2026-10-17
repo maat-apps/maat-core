@@ -29,9 +29,11 @@ function parse(stored: unknown): string[] {
 
 function itemsStore(
   storage: KeyValueStore,
-  encryption?: Parameters<typeof createLocalStore<string[]>>[0]["encryption"],
+  encryption?: Parameters<
+    typeof createLocalStore<string[], Data>
+  >[0]["encryption"],
 ) {
-  return createLocalStore<string[]>({
+  return createLocalStore<string[], Data>({
     storage,
     key: KEY,
     empty: [],
