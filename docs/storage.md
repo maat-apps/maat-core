@@ -32,6 +32,17 @@ the pattern an app builds on top of them.
   script-writable storage after 7 days without interaction in a plain
   browser tab. It matters less once installed, but it's free.
 
+## In core: `@maat-apps/core/local`
+
+The pattern ships with its logic in `@maat-apps/core/local`, so an app no
+longer writes its own load/decrypt/persist module: `createLocalStore`
+takes the storage key, the empty value and the app's schema (`parse`, plus
+`serialize` for the stored shape) and the lock's key holder;
+`createLocalBackup` adds the versioned JSON backup and the pre-update
+snapshot; `lockData` wires both into `createAppLock`. What stays in the app
+is its own: the schema, the mutations (`saveNote`, …) as small functions
+over `store.update`, and anything derived on read (routines' daily reset).
+
 ## Consequences to design for
 
 - **First load is async.** Until the background read resolves, screens see
