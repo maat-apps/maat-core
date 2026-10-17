@@ -17,6 +17,10 @@
       "types": "./dist/crypto.d.ts",
       "import": "./dist/crypto.js"
     },
+    "./github": {
+      "types": "./dist/github.d.ts",
+      "import": "./dist/github.js"
+    },
     "./i18n": {
       "types": "./dist/i18n.d.ts",
       "import": "./dist/i18n.js"

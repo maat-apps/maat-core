@@ -29,9 +29,11 @@ function parse(stored: unknown): string[] {
 
 function itemsStore(
   storage: KeyValueStore,
-  encryption?: Parameters<typeof createLocalStore<string[]>>[0]["encryption"],
+  encryption?: Parameters<
+    typeof createLocalStore<string[], Data>
+  >[0]["encryption"],
 ) {
-  return createLocalStore<string[]>({
+  return createLocalStore<string[], Data>({
     storage,
     key: KEY,
     empty: [],
@@ -308,12 +310,22 @@ describe("createLocalBackup", () => {
       version: 1,
       store,
       messages,
-      extras: { create: () => ({ locale: "pl" }), apply: applyExtras },
+      extras: {
+        create: () => ({ locale: "pl" }),
+        parse: ({ locale }) => ({
+          locale: typeof locale === "string" ? locale : null,
+        }),
+        apply: applyExtras,
+      },
       afterApply,
       snapshot: { storage, key: SNAPSHOT_KEY },
     });
     const backup = backups.create();
     expect(backup.locale).toBe("pl");
+    expect(backups.parseValue({ ...backup, locale: 42, junk: true })).toEqual({
+      ...backup,
+      locale: null,
+    });
 
     backups.apply({ ...backup, data: { items: ["b"] } });
     await store.whenLoaded();

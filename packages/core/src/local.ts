@@ -31,7 +31,7 @@ export type LockDataPart = {
   erase: () => void | Promise<void>;
 };
 
-export type LocalStoreOptions<T> = {
+export type LocalStoreOptions<T, S = unknown> = {
   storage: KeyValueStore;
   key: string;
   /** The value before anything is loaded, and after an erase. */
@@ -42,7 +42,7 @@ export type LocalStoreOptions<T> = {
    */
   parse: (stored: unknown) => T;
   /** What's stored for a value; the value itself by default. */
-  serialize?: (value: T) => unknown;
+  serialize?: (value: T) => S;
   encryption?: {
     keyHolder: KeyHolder;
     /**
@@ -54,7 +54,7 @@ export type LocalStoreOptions<T> = {
   };
 };
 
-export type LocalStore<T> = LockDataPart & {
+export type LocalStore<T, S = unknown> = LockDataPart & {
   getSnapshot(): T;
   /** For useSyncExternalStore's server snapshot: always `empty`. */
   getServerSnapshot(): T;
@@ -72,19 +72,19 @@ export type LocalStore<T> = LockDataPart & {
   /** Replaces the value with `change(current)`. */
   update(change: (current: T) => T): Promise<void>;
   /** The stored form of `value` (the current one by default), e.g. for a backup. */
-  serialize(value?: T): unknown;
+  serialize(value?: T): S;
   /** The app's `parse` (e.g. for a backup's data). */
   parse(stored: unknown): T;
 };
 
-export function createLocalStore<T>({
+export function createLocalStore<T, S = T>({
   storage,
   key,
   empty,
   parse,
-  serialize = (value) => value,
+  serialize = (value) => value as unknown as S,
   encryption,
-}: LocalStoreOptions<T>): LocalStore<T> {
+}: LocalStoreOptions<T, S>): LocalStore<T, S> {
   const listeners = new Set<() => void>();
   let value = empty;
   let ready = false;
@@ -182,13 +182,15 @@ export function createLocalStore<T>({
   };
 }
 
-export type LocalBackup = BackupEnvelope & Record<string, unknown>;
+/** A backup: the envelope, the app's `extras`, and its stored data as `data`. */
+export type LocalBackup<S = unknown> = BackupEnvelope &
+  Record<string, unknown> & { data: S };
 
-export type LocalBackupOptions<T> = {
+export type LocalBackupOptions<T, S> = {
   /** The app's id in the backup file, e.g. `"notes"`. */
   app: string;
   version: number;
-  store: LocalStore<T>;
+  store: LocalStore<T, S>;
   messages: BackupMessages;
   /** Refuse a backup of another `version` (`messages.wrongVersion`). */
   exactVersion?: boolean;
@@ -200,7 +202,9 @@ export type LocalBackupOptions<T> = {
   /** Fields a backup carries next to `data` (e.g. the language). */
   extras?: {
     create: () => Record<string, unknown>;
-    apply: (backup: LocalBackup) => void;
+    /** Validates them from an imported file; only what it returns is kept. */
+    parse: (backup: Record<string, unknown>) => Record<string, unknown>;
+    apply: (backup: LocalBackup<S>) => void;
   };
   /** Runs after a backup replaced the data (e.g. to drop a derived cache). */
   afterApply?: () => void;
@@ -213,18 +217,18 @@ export type LocalBackupOptions<T> = {
   };
 };
 
-export type LocalBackupKit = {
-  create(): LocalBackup;
+export type LocalBackupKit<S> = {
+  create(): LocalBackup<S>;
   /** Validates a backup file's text; throws `BackupError` with a message. */
-  parse(text: string): LocalBackup;
+  parse(text: string): LocalBackup<S>;
   /** The same for an already-parsed value (e.g. read back from storage). */
-  parseValue(value: unknown): LocalBackup;
+  parseValue(value: unknown): LocalBackup<S>;
   /** Replaces the data with the backup's. */
-  apply(backup: LocalBackup): void;
+  apply(backup: LocalBackup<S>): void;
   fileName(date?: Date): string;
-  download(backup?: LocalBackup): void;
-  share(backup?: LocalBackup): Promise<ShareResult>;
-  snapshot: UpdateSnapshot<LocalBackup>;
+  download(backup?: LocalBackup<S>): void;
+  share(backup?: LocalBackup<S>): Promise<ShareResult>;
+  snapshot: UpdateSnapshot<LocalBackup<S>>;
   /** Snapshots, activates the waiting worker, drops the caches, reloads. */
   updateApp(): Promise<void>;
   /** For `lockData`: the snapshot is deleted on erase. */
@@ -232,7 +236,7 @@ export type LocalBackupKit = {
 };
 
 /** The JSON backup and pre-update snapshot of a `LocalStore`. */
-export function createLocalBackup<T>({
+export function createLocalBackup<T, S>({
   app,
   version,
   store,
@@ -242,8 +246,8 @@ export function createLocalBackup<T>({
   extras,
   afterApply,
   snapshot: snapshotOptions,
-}: LocalBackupOptions<T>): LocalBackupKit {
-  function create(): LocalBackup {
+}: LocalBackupOptions<T, S>): LocalBackupKit<S> {
+  function create(): LocalBackup<S> {
     return {
       app,
       version,
@@ -253,24 +257,30 @@ export function createLocalBackup<T>({
     };
   }
 
-  function parseValue(value: unknown): LocalBackup {
+  function parseValue(value: unknown): LocalBackup<S> {
     const envelope = readBackupEnvelope(value, {
       app,
       version: exactVersion ? version : undefined,
       messages,
     });
     const data = parseData(envelope.data);
-    // Re-serialized, so only what the schema accepted is kept.
-    return { ...envelope, version, data: store.serialize(data) };
+    // Rebuilt and re-serialized, so only what the schemas accepted is kept.
+    return {
+      app,
+      version,
+      exportedAt: envelope.exportedAt,
+      ...extras?.parse(envelope),
+      data: store.serialize(data),
+    };
   }
 
-  function apply(backup: LocalBackup): void {
+  function apply(backup: LocalBackup<S>): void {
     void store.replace(store.parse(backup.data));
     extras?.apply(backup);
     afterApply?.();
   }
 
-  const snapshot = createUpdateSnapshot<LocalBackup>({
+  const snapshot = createUpdateSnapshot<LocalBackup<S>>({
     storage: snapshotOptions.storage,
     key: snapshotOptions.key,
     backup: { create, parse: parseValue, apply },

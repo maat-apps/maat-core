@@ -4,6 +4,7 @@ export default defineConfig({
   entry: [
     "src/backup.ts",
     "src/crypto.ts",
+    "src/github.ts",
     "src/i18n.ts",
     "src/install.ts",
     "src/local.ts",
