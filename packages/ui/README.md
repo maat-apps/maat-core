@@ -96,6 +96,13 @@ everything from one barrel for convenience.
   screen's own header (`AppBar` or otherwise) sits in, plus the shared
   heading styles: `PageTitle` (a screen's main title) and `SectionTitle`
   (the small, muted label over a group, as in Keep).
+- `bottom-bar.tsx` — `BottomBar`, a home view's fixed bottom bar within
+  the thumb's reach: `settings` on the left, the view's controls as
+  `children` in the middle, the primary `action` on the right, an optional
+  `above` row for less-used controls; safe-area padding, and an in-flow
+  spacer as tall as the bar so the page needs no bottom padding for it.
+  Fill it with `BottomBarButton` (56×56, `ghost` or `primary`) and
+  `BottomBarChips`/`BottomBarChip` (a sideways-scrolling chip group).
 - `drag-handle.tsx` — the grab handle for a `@dnd-kit`-sortable row.
 - `sortable-list.tsx` — `SortableList` (a vertical drag-to-reorder list
   that reports the new order as ids via `onReorder` and renders rows with
