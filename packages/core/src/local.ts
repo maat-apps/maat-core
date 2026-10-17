@@ -202,6 +202,8 @@ export type LocalBackupOptions<T, S> = {
   /** Fields a backup carries next to `data` (e.g. the language). */
   extras?: {
     create: () => Record<string, unknown>;
+    /** Validates them from an imported file; only what it returns is kept. */
+    parse: (backup: Record<string, unknown>) => Record<string, unknown>;
     apply: (backup: LocalBackup<S>) => void;
   };
   /** Runs after a backup replaced the data (e.g. to drop a derived cache). */
@@ -262,8 +264,14 @@ export function createLocalBackup<T, S>({
       messages,
     });
     const data = parseData(envelope.data);
-    // Re-serialized, so only what the schema accepted is kept.
-    return { ...envelope, version, data: store.serialize(data) };
+    // Rebuilt and re-serialized, so only what the schemas accepted is kept.
+    return {
+      app,
+      version,
+      exportedAt: envelope.exportedAt,
+      ...extras?.parse(envelope),
+      data: store.serialize(data),
+    };
   }
 
   function apply(backup: LocalBackup<S>): void {
