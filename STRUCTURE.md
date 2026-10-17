@@ -82,6 +82,14 @@ e2e/            # Playwright specs + e2e/utils.ts
   form share one height. An app that sets a larger field height applies it
   to all of these, not to `Input` alone; the visual size may stay
   small if padding or a pseudo-element extends the hit area.
+- **Screen layout.** A home view (the app's `/`) has no sticky header:
+  its title, if any, is a plain `PageTitle` that scrolls away with the
+  content, and every control sits in `@maat-apps/ui`'s `BottomBar`, within
+  the thumb's reach — settings on the left, the view's own controls
+  (filters, sort, plan chips, …) in the middle, the primary action (add)
+  on the right, 56px targets. Detail and edit views keep the top `AppBar`
+  with back and a title: it gives context, and the system back gesture
+  covers reach.
 - Always import through the aliases `components.json` declares (`utils`,
   `ui`, `components`, `lib`, `hooks`) rather than straight from an
   underlying package, so a future `npx shadcn add` or hand-adjustment
