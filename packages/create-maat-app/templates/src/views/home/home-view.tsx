@@ -8,7 +8,7 @@ import { updateApp } from "../../lib/app-update";
 
 // A starting point, not a destination — this app's real Settings screen
 // (once it has one) is where install/update actions like these normally
-// live; see trainer's or routines' own settings-app-section.tsx and
+// live; see routines' or notes' own settings-app-section.tsx and
 // settings-security-section.tsx for that pattern once this app is past its
 // first view.
 export function HomeView() {

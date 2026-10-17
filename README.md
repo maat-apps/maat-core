@@ -1,8 +1,11 @@
 # maat-core
 
 Shared standards, configs, and tooling for the [Ma'at Apps](https://github.com/maat-apps)
-ecosystem — [`routines`](https://github.com/maat-apps/routines) and whatever
-else follows it.
+ecosystem — [`routines`](https://github.com/maat-apps/routines),
+[`notes`](https://github.com/maat-apps/notes),
+[`albums`](https://github.com/maat-apps/albums),
+[`gym-charts`](https://github.com/maat-apps/gym-charts) and whatever else
+follows them.
 
 This repo doesn't ship a runtime app itself. It's the place ecosystem-wide
 decisions (shared config, UI components, conventions) live once they're worth
