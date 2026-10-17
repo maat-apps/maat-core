@@ -45,14 +45,14 @@ node packages/create-maat-app/bin/cli.mjs <app-name> [--desktop]
   `app-settings.ts` (`/persisted`), `locale-store.ts` +
   `src/i18n/use-translation.ts` (`/locale` + `/i18n`, `en.json`),
   `app-update.ts` (`/update`), `src/hooks/use-install-prompt.ts`
-  (`/install`) and `src/sw.ts` (`/sw`) — the same shape routines and
-  trainer use.
+  (`/install`) and `src/sw.ts` (`/sw`) — the same shape every maat-apps
+  app uses.
 - **The app lock**, every app's default: `src/lib/app-lock.ts`
   (`/lock`, HKDF info `<app-name>-data-v1`), `encryption-key.ts`,
   `src/components/app-lock-gate.tsx` (ui's `AppLockGate` around the
   router) and a lock switch on the starter view. Its `data` adapter is
-  empty until the app keeps data — then wire it to storage like routines
-  and trainer do.
+  empty until the app keeps data — then wire it to storage like routines,
+  notes and albums do.
 - A working PWA shell and manual force-update mechanism, every app's
   default: `vite-plugin-pwa` (`injectManifest`) with that `src/sw.ts`,
   `public/manifest.json` + `public/icon.svg` (a brand-neutral placeholder —
@@ -70,8 +70,8 @@ node packages/create-maat-app/bin/cli.mjs <app-name> [--desktop]
 Routines-specific pieces that aren't part of the generic structure: a
 reactive, IndexedDB-backed app-data store (`storage.ts`'s
 `getDataSnapshot()`/`subscribe()` pattern — routines' own version, and
-trainer's, both build on the same `idb-store.ts` this scaffold already
-ships), `@dnd-kit`, and the second `pl` locale catalog. Add these per-app
+notes' and albums', all build on the same `idb-store.ts` this scaffold
+already ships), `@dnd-kit`, and the second `pl` locale catalog. Add these per-app
 once actually needed — see `STRUCTURE.md`'s own scope note on what's
 generic vs. app-specific. (PWA/service-worker support _used_ to be on this
 list too — see `package-json.mjs`'s own comment for why that changed.)

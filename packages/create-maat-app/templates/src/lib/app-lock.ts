@@ -11,7 +11,7 @@ export const HKDF_INFO = "{{APP_NAME}}-data-v1";
 // gate that encrypts the app's data when the authenticator supports PRF, a
 // UI gate otherwise. `data` connects it to the app's storage — once the app
 // keeps data, `rewrite` re-saves it with the current key and `erase` wipes
-// it (plus any update snapshot), as routines' and trainer's app-lock.ts do.
+// it (plus any update snapshot), as routines' and notes' app-lock.ts do.
 export const appLock = createAppLock({
   name: "{{APP_NAME}}",
   keyInfo: HKDF_INFO,

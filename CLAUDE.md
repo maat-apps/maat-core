@@ -15,8 +15,9 @@ and the npm workspaces under `packages/`. See `README.md` for the map.
 | `packages/config` → `@maat-apps/config` | Shared ESLint, Prettier and TypeScript base configs      |
 | `packages/create-maat-app`              | Scaffolding CLI for a new app                            |
 
-Consumers: `maat-apps/routines` and `maat-apps/trainer`. A change here is
-only half done until they use it — follow up with a PR in each app.
+Consumers: `maat-apps/routines`, `maat-apps/notes`, `maat-apps/albums` and
+`maat-apps/gym-charts`. A change here is only half done until they use it —
+follow up with a PR in each app.
 
 ## Commands
 
@@ -49,7 +50,7 @@ only surface as a CI failure.
    version was approved last, so approving an older staged version after a
    newer one moves `latest` back (fix: `npm dist-tag add
 @maat-apps/<pkg>@<version> latest`, owner's npm account).
-5. Bump the dependency in routines/trainer in a follow-up PR per app.
+5. Bump the dependency in each consuming app in a follow-up PR per app.
 
 A brand-new package can't be staged: its first version needs one manual
 `npm publish -w <package> --access public` by the owner, then a Trusted
