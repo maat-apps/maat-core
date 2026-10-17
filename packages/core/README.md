@@ -9,6 +9,7 @@ an app's bundle only contains what it imports.
 | `@maat-apps/core/storage`    | IndexedDB key-value store                         |
 | `@maat-apps/core/persisted`  | In-memory + IndexedDB store (e.g. settings)       |
 | `@maat-apps/core/local`      | An app's data: local store, backup, lock wiring   |
+| `@maat-apps/core/github`     | An app's data in a GitHub repository (+ local)    |
 | `@maat-apps/core/crypto`     | WebAuthn PRF → AES-GCM encryption, base64url      |
 | `@maat-apps/core/lock`       | App lock: WebAuthn gate + optional encryption     |
 | `@maat-apps/core/locale`     | Persisted locale store with device detection      |
@@ -250,6 +251,59 @@ createAppLock({ /* … */ data: lockData(notesStore, backups.lockPart) });
   app refuse a backup, `afterApply` drops derived caches.
 - `lockData(...parts)`: the app lock's `rewrite` (each part, a failure
   doesn't stop the rest) and `erase` (all parts).
+
+## `github`
+
+The GitHub repository pattern
+([`docs/storage-github.md`](../../docs/storage-github.md)), on top of
+`/local`:
+
+```ts
+import {
+  createRepoConnection,
+  createRepoSync,
+  formatJsonFile,
+  parseJsonFile,
+  syncedIdsExtra,
+} from "@maat-apps/core/github";
+
+const connection = createRepoConnection({
+  storage,
+  key: "albums-github",
+  keyHolder: encryptionKey,
+  encrypts: lockEncrypts,
+  extra: syncedIdsExtra, // two-way; `{ initial: {}, parse: () => ({}) }` read-only
+});
+
+const repoSync = createRepoSync({
+  connection,
+  store: albumsStore, // a /local store of items with id + updatedAt
+  file: {
+    format: (items) => formatJsonFile(items, { compare, fields }),
+    parse: (text) => parseJsonFile(text, parseAlbums, messages),
+  },
+  merge: { pair: sameAlbum, combine }, // optional
+  commitMessage: "Update albums from the app",
+});
+```
+
+- Client: `readRepoFile` (files over 1 MB from the blob; `null` for a
+  missing file in a readable repository), `writeRepoFile`, `GitHubError`
+  with a `kind` (`unauthorized`, `notFound`, `conflict`, `rateLimited`,
+  `server`, `network`, `invalid`), `parseRepo("owner/repo")`. An empty
+  `branch` is the default branch.
+- `createRepoConnection`: the location + token (+ the app's `extra`), only
+  ever stored encrypted — `connect` refuses without the lock's key and
+  checks access first; `rewrite`/`erase` for `lockData`.
+- `createRepoMirror` (read-only): `sync`/`syncOnStart` into a `/local`
+  store of `MirrorCopy<T>` (`data`, `syncedAt`); a failure keeps the last
+  copy and sets `getStatus().error`.
+- `createRepoSync` (two-way) over `mergeById`: by id, newer `updatedAt`
+  wins (`combine` to refine), `syncedIds` tells deletions from additions,
+  `pair` matches records before the first sync, one retry on a 409.
+- `formatJsonFile`/`parseJsonFile`/`pickFields`: the deterministic file
+  (sorted, fixed field order, two-space indent, trailing newline) and a
+  parser that refuses rather than drops what it can't read.
 
 ## `update`
 

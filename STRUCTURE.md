@@ -142,8 +142,21 @@ e2e/            # Playwright specs + e2e/utils.ts
   not-yet-typed API, a non-standard property like
   `navigator.standalone`). If removing a cast still type-checks, it was
   never doing anything.
-- Persist data with the local-first storage pattern in
-  [`docs/storage.md`](./docs/storage.md).
+- **Persist data with one of two patterns**, both in `@maat-apps/core`:
+  - **Local** ([`docs/storage.md`](./docs/storage.md), `/local`):
+    IndexedDB write-through, encrypted by the app lock, a JSON backup.
+  - **GitHub repository**
+    ([`docs/storage-github.md`](./docs/storage-github.md), `/github`):
+    the local pattern plus one JSON file in the user's own repository —
+    read-only or two-way sync.
+
+  **Which one:** sensitive data stays local. A private repository is not
+  encrypted (a leaked token, an accidental visibility flip, a compromised
+  account all expose it), and encrypting the file there would kill what
+  the pattern is for — diffs, editing by hand, the repository's own
+  workflows. So routines and notes are local; albums (two-way sync) and
+  gym-charts (read-only) use a repository, where commit history and
+  workflows earn their keep.
 
 ## Branch naming
 

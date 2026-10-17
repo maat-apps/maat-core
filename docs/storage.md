@@ -42,6 +42,8 @@ takes the storage key, the empty value and the app's schema (`parse`, plus
 snapshot; `lockData` wires both into `createAppLock`. What stays in the app
 is its own: the schema, the mutations (`saveNote`, …) as small functions
 over `store.update`, and anything derived on read (routines' daily reset).
+Data that should also live in a GitHub repository builds on this — see
+[`storage-github.md`](./storage-github.md).
 
 ## Consequences to design for
 
