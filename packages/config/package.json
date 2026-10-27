@@ -1,23 +1,67 @@
 {
   "name": "@maat-apps/config",
-  "version": "0.1.0",
-  "description": "Shared ESLint, Prettier and TypeScript base configs for maat-apps repos, with the plugins they load as dependencies.",
+  "version": "0.2.0",
+  "description": "Shared ESLint, Prettier, TypeScript, Vite and Vitest configs for maat-apps repos, with the plugins they load as dependencies.",
   "type": "module",
   "license": "MIT",
   "files": [
     "eslint.mjs",
     "prettier.mjs",
-    "tsconfig.base.json"
+    "tsconfig.base.json",
+    "vite.mjs",
+    "vite.d.mts",
+    "vitest.mjs",
+    "vitest.d.mts",
+    "vitest-setup.mjs"
   ],
   "exports": {
     "./eslint": "./eslint.mjs",
     "./prettier": "./prettier.mjs",
-    "./tsconfig.base.json": "./tsconfig.base.json"
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./vite": {
+      "types": "./vite.d.mts",
+      "import": "./vite.mjs"
+    },
+    "./vitest": {
+      "types": "./vitest.d.mts",
+      "import": "./vitest.mjs"
+    },
+    "./vitest-setup": "./vitest-setup.mjs"
   },
   "peerDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@testing-library/react": "^16",
+    "@vitejs/plugin-react": "^5",
     "eslint": "^10",
+    "fake-indexeddb": "^6",
     "prettier": "^3",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite": "^7",
+    "vite-plugin-pwa": "^1",
+    "vitest": "^5"
+  },
+  "peerDependenciesMeta": {
+    "@tailwindcss/postcss": {
+      "optional": true
+    },
+    "@testing-library/react": {
+      "optional": true
+    },
+    "@vitejs/plugin-react": {
+      "optional": true
+    },
+    "fake-indexeddb": {
+      "optional": true
+    },
+    "vite": {
+      "optional": true
+    },
+    "vite-plugin-pwa": {
+      "optional": true
+    },
+    "vitest": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@eslint/js": "^9.39.5",
