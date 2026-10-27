@@ -81,8 +81,27 @@ jsdom, `tests/unit/**/*.test.ts`, one environment for every file
 cleanup and a short pause for fire-and-forget storage writes after each
 test.
 
-Vite, Vitest and their plugins are optional peers: the repo lists them in
+Vite, Vitest, Playwright and their plugins are optional peers: the repo lists them in
 its own `devDependencies`, as it does `eslint`.
+
+## Playwright helpers
+
+```ts
+import {
+  installPrfAuthenticator,
+  readStored,
+} from "@maat-apps/config/playwright";
+
+// Wait for a background write before reloading.
+await expect
+  .poll(() => readStored(page, "my-app", "my-app-settings"))
+  .toMatchObject({ lock: expect.anything() });
+
+// Chromium: a virtual authenticator with PRF, so the lock really encrypts.
+await installPrfAuthenticator(page);
+```
+
+Plain functions for `e2e/utils.ts` (and specs), not Playwright fixtures.
 
 When a repo's needs genuinely diverge, keep the divergence local rather
 than forcing it back here — see

@@ -1,7 +1,7 @@
 {
   "name": "@maat-apps/config",
   "version": "0.2.0",
-  "description": "Shared ESLint, Prettier, TypeScript, Vite and Vitest configs for maat-apps repos, with the plugins they load as dependencies.",
+  "description": "Shared ESLint, Prettier, TypeScript, Vite, Vitest and Playwright configs and helpers for maat-apps repos, with the plugins they load as dependencies.",
   "type": "module",
   "license": "MIT",
   "files": [
@@ -12,7 +12,9 @@
     "vite.d.mts",
     "vitest.mjs",
     "vitest.d.mts",
-    "vitest-setup.mjs"
+    "vitest-setup.mjs",
+    "playwright.mjs",
+    "playwright.d.mts"
   ],
   "exports": {
     "./eslint": "./eslint.mjs",
@@ -26,9 +28,14 @@
       "types": "./vitest.d.mts",
       "import": "./vitest.mjs"
     },
-    "./vitest-setup": "./vitest-setup.mjs"
+    "./vitest-setup": "./vitest-setup.mjs",
+    "./playwright": {
+      "types": "./playwright.d.mts",
+      "import": "./playwright.mjs"
+    }
   },
   "peerDependencies": {
+    "@playwright/test": "^1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/react": "^16",
     "@vitejs/plugin-react": "^5",
@@ -41,6 +48,9 @@
     "vitest": "^5"
   },
   "peerDependenciesMeta": {
+    "@playwright/test": {
+      "optional": true
+    },
     "@tailwindcss/postcss": {
       "optional": true
     },
