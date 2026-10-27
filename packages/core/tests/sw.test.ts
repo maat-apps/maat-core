@@ -109,10 +109,11 @@ beforeEach(() => {
 
 afterEach(() => vi.unstubAllGlobals());
 
-function setup(cacheName = "app-v2") {
+function setup(cacheName = "app-v2", shareTarget?: { cacheName: string }) {
   const { scope, listeners, raw } = fakeScope();
   registerAppWorker(scope, {
     cacheName,
+    shareTarget,
     baseUrl: BASE,
     manifest: [
       { url: `${BASE}assets/index-abc.js`, revision: null },
@@ -245,5 +246,38 @@ describe("message", () => {
 
     onMessage({ data: SKIP_WAITING_MESSAGE });
     expect(raw.skipWaiting).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("share target", () => {
+  const SHARED = "app-shared-backup";
+
+  it("keeps the shared-backup cache on activate", async () => {
+    await cacheStorage.open("app-v1");
+    await cacheStorage.open(SHARED);
+    const { listeners } = setup("app-v2", { cacheName: SHARED });
+
+    await dispatchExtendable(listeners, "activate");
+
+    expect([...cacheStorage.stores.keys()]).toEqual([SHARED]);
+  });
+
+  it("answers the share POST with a redirect home", async () => {
+    const { listeners } = setup("app-v2", { cacheName: SHARED });
+
+    const response = await dispatchFetch(listeners, `${BASE}share-target`, {
+      method: "POST",
+    });
+
+    // An empty form: nothing parked, still sent home.
+    expect(response?.status).toBe(303);
+  });
+
+  it("leaves the share POST alone without the option", () => {
+    const { listeners } = setup();
+
+    expect(
+      dispatchFetch(listeners, `${BASE}share-target`, { method: "POST" }),
+    ).toBeUndefined();
   });
 });

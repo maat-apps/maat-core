@@ -1,4 +1,4 @@
-import { Lock } from "@phosphor-icons/react";
+import { Fingerprint, Lock } from "@phosphor-icons/react";
 import {
   type ReactNode,
   useCallback,
@@ -101,8 +101,9 @@ function usePromptOnArrival(locked: boolean, prompt: () => void): void {
  * Hides the app behind the platform-authenticator prompt while a lock is
  * enrolled and this session hasn't passed it — at launch, and again when
  * the lock relocks after time in the background. The prompt opens by
- * itself; the lock screen is the same for every app: a lock icon that
- * prompts when tapped, with no text. Renders nothing until `ready` — "no
+ * itself; the lock screen is the same for every app: a large fingerprint
+ * that prompts when tapped, with no text (the apps ask for "your
+ * fingerprint", though the OS picks how to verify). Renders nothing until `ready` — "no
  * lock" can't be told apart from "settings not loaded yet", and a locked
  * device must never flash unlocked.
  *
@@ -222,9 +223,10 @@ export function AppLockGate<
                 className="grid place-items-center outline-none"
                 onClick={() => void unlock(true)}
               >
-                <Lock
+                <Fingerprint
                   aria-hidden="true"
-                  className="text-muted-foreground size-8"
+                  weight="light"
+                  className="text-muted-foreground size-20"
                 />
               </button>
               {showEscape && (

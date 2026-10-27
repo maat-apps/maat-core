@@ -2,6 +2,7 @@ import { defineConfig } from "tsup";
 
 export default defineConfig({
   entry: [
+    "src/app-settings.ts",
     "src/backup.ts",
     "src/crypto.ts",
     "src/github.ts",
@@ -12,6 +13,7 @@ export default defineConfig({
     "src/lock.ts",
     "src/persisted.ts",
     "src/storage.ts",
+    "src/share-target.ts",
     "src/sw.ts",
     "src/update.ts",
     "src/validation.ts",
