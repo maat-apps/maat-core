@@ -239,7 +239,8 @@ Every repo works the same way, from maat-core's
 
 - **PRs**: `/open-pr` pushes the branch and opens the PR with a generated
   description (`/pr-description`) — no local re-verification, no
-  confirmation pause. **Merge once CI is green**: enable auto-merge where
+  confirmation pause: opening, watching CI and merging on green are
+  standing permission, never asked for. **Merge once CI is green**: enable auto-merge where
   the repo allows it, otherwise merge (squash) as soon as checks pass,
   respecting a required order (stacked PRs, unmerged prerequisites). Red
   checks get fixed, never merged. Every repo has CI, so there's always a
