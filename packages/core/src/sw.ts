@@ -11,6 +11,10 @@
 // app decides what of it to keep, and cache-first would freeze API answers
 // and fill the cache with images forever. A new worker waits until the app sends
 // SKIP_WAITING_MESSAGE, so an open tab never loses its loaded chunks.
+// With `shareTarget`, it also takes backups shared from another app
+// (./share-target).
+
+import { isShareTargetRequest, receiveSharedBackup } from "./share-target";
 
 /** What vite-plugin-pwa's injectManifest puts in `self.__WB_MANIFEST`. */
 export type PrecacheManifest = Array<
@@ -60,6 +64,11 @@ export type AppWorkerOptions = {
    * base path (e.g. a PR preview) caches and falls back to its own shell.
    */
   baseUrl: string;
+  /**
+   * Accept backups shared from another app (./share-target): the POST to
+   * `share-target` parks the file in this cache, which activation keeps.
+   */
+  shareTarget?: { cacheName: string };
 };
 
 function isSkipWaiting(data: unknown): boolean {
@@ -72,7 +81,7 @@ function isSkipWaiting(data: unknown): boolean {
 
 export function registerAppWorker(
   scope: WorkerScope,
-  { cacheName, manifest, baseUrl }: AppWorkerOptions,
+  { cacheName, manifest, baseUrl, shareTarget }: AppWorkerOptions,
 ): void {
   const precacheUrls = manifest.map((entry) =>
     typeof entry === "string" ? entry : entry.url,
@@ -129,7 +138,9 @@ export function registerAppWorker(
         .then((keys) =>
           Promise.all(
             keys
-              .filter((key) => key !== cacheName)
+              .filter(
+                (key) => key !== cacheName && key !== shareTarget?.cacheName,
+              )
               .map((key) => caches.delete(key)),
           ),
         ),
@@ -140,6 +151,15 @@ export function registerAppWorker(
   });
 
   scope.addEventListener("fetch", (event) => {
+    if (shareTarget && isShareTargetRequest(event.request, baseUrl)) {
+      event.respondWith(
+        receiveSharedBackup(event.request, {
+          baseUrl,
+          cacheName: shareTarget.cacheName,
+        }),
+      );
+      return;
+    }
     if (event.request.method !== "GET") return;
     const url = new URL(event.request.url);
     if (url.protocol !== "http:" && url.protocol !== "https:") return;

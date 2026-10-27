@@ -70,7 +70,7 @@ Publisher entry for `publish.yml` on npmjs.com.
   [Ma'at Apps Roadmap](https://github.com/orgs/maat-apps/projects/1)
   (`STRUCTURE.md`'s Task tracking).
 - `core`'s non-React subpaths (`storage`, `crypto`, `lock`, `locale`,
-  `persisted`, `app-settings`, `local`, `github`, `update`, `sw`, `validation`, `backup`) must never import
+  `persisted`, `app-settings`, `local`, `github`, `update`, `sw`, `share-target`, `validation`, `backup`) must never import
   `react`; only `/i18n` and `/install`
   may (`react` is an optional peer).
 - `core/crypto`'s `deriveKey` `info` argument is part of each app's stored

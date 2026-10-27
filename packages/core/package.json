@@ -49,6 +49,10 @@
       "types": "./dist/persisted.d.ts",
       "import": "./dist/persisted.js"
     },
+    "./share-target": {
+      "types": "./dist/share-target.d.ts",
+      "import": "./dist/share-target.js"
+    },
     "./storage": {
       "types": "./dist/storage.d.ts",
       "import": "./dist/storage.js"

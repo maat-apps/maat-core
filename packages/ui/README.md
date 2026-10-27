@@ -135,6 +135,11 @@ everything from one barrel for convenience.
   the lock" escape hatch (with an erase warning when the lock encrypts). Takes `@maat-apps/core/lock`'s
   `AppLock`, the stored enrolment, a `ready` flag (settings loaded) and the
   app's translated `labels`.
+- `shared-backup-import.tsx` — `SharedBackupImport`, rendered on home: a
+  backup shared from another app (`@maat-apps/core/share-target`) arrives
+  with `?shared-backup`; it takes the file, asks like Settings → Import,
+  or says the file isn't a backup. Not in the barrel (needs
+  `react-router`): import `@maat-apps/ui/shared-backup-import`.
 - `smart-back.ts` — `useSmartBack(fallback)`, the "Back" action for an
   app bar: pops history after an in-app navigation, replaces to
   `fallback` on a deep link (refresh, PWA relaunch, bookmark), where

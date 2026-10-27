@@ -13,6 +13,7 @@ export default defineConfig({
     "src/lock.ts",
     "src/persisted.ts",
     "src/storage.ts",
+    "src/share-target.ts",
     "src/sw.ts",
     "src/update.ts",
     "src/validation.ts",

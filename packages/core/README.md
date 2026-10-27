@@ -178,7 +178,10 @@ registerAppWorker(self, {
 ```
 
 - Install precaches `baseUrl` plus every manifest entry. Activate deletes
-  every cache not named `cacheName` and claims clients.
+  every cache not named `cacheName` (or `shareTarget.cacheName`) and
+  claims clients.
+- `shareTarget: { cacheName: "my-app-shared-backup" }` accepts backups
+  shared from another app — see `share-target` below.
 - Navigations and `manifest.json` go network-first, with the cached shell
   as the offline fallback. Everything else is cache-first (Vite's assets
   are content-hashed). Only successful `GET`s over http(s) are cached.
@@ -187,6 +190,30 @@ registerAppWorker(self, {
   open tab never loses the chunks it already loaded.
 - **Bump `cacheName` whenever the shell changes.** It's the only way old
   caches get cleaned up.
+
+## `share-target`
+
+Backups shared to the installed app from another one (Android's share
+sheet — e.g. a cloud drive the file picker can't reach). The manifest
+declares the target (`public/manifest.json`, with the app's base path):
+
+```json
+"share_target": {
+  "action": "/my-app/share-target",
+  "method": "POST",
+  "enctype": "multipart/form-data",
+  "params": {
+    "files": [{ "name": "backup", "accept": ["application/json", ".json", "text/plain", ".txt"] }]
+  }
+}
+```
+
+The worker (`registerAppWorker`'s `shareTarget`) parks the file in its
+cache, which activation keeps, and redirects home with `?shared-backup`;
+there `@maat-apps/ui/shared-backup-import` takes it with
+`takeSharedBackup({ baseUrl, cacheName })` and imports after a
+confirmation. `isShareTargetRequest` and `receiveSharedBackup` are the
+worker's half, for a worker of its own.
 
 ## `persisted`
 

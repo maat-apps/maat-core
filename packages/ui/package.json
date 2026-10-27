@@ -109,6 +109,10 @@
       "types": "./dist/settings-sections.d.ts",
       "import": "./dist/settings-sections.js"
     },
+    "./shared-backup-import": {
+      "types": "./dist/shared-backup-import.d.ts",
+      "import": "./dist/shared-backup-import.js"
+    },
     "./smart-back": {
       "types": "./dist/smart-back.d.ts",
       "import": "./dist/smart-back.js"
