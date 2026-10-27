@@ -61,7 +61,8 @@ Publisher entry for `publish.yml` on npmjs.com.
 - Never edit or commit on `main`. Branch `<type>/<slug>` with a
   Conventional Commits type (`STRUCTURE.md`'s Branch naming); commit
   messages and PR titles use the same `type(scope): summary` form.
-- Commit when a task is done, push, open the PR with `gh pr create`.
+- Commit when a task is done, push, open the PR with `gh pr create` —
+  without asking first (standing permission, no confirmation needed).
 - Merge your own PR (squash) once CI is green, respecting any required
   order (stacked PRs, a prerequisite not merged yet). This repo doesn't
   allow auto-merge, so merge by hand.

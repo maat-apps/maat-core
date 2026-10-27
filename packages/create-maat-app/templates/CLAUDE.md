@@ -66,6 +66,8 @@ What follows here is what's specific to **{{APP_NAME}}**.
   session-scoped name; cut a fresh branch per PR/task rather than reusing
   one across unrelated changes.
 - Commit once a task's changes are complete, then use `/open-pr` to push
-  and open the PR.
+  and open the PR — without asking first. Then watch its CI (fix and push
+  on red) and squash-merge it yourself as soon as CI is green; this is
+  standing permission, no confirmation needed.
 
 <!-- END AUTO-GENERATED: setup-claude-workflow -->
