@@ -1,100 +1,88 @@
-import { useEffect, useState } from "react";
+import { Gear } from "@phosphor-icons/react";
+import { useState } from "react";
 
-import { useAppSettings } from "../../hooks/use-app-settings";
+import { Button } from "@maat-apps/ui/button";
+import { PageHeader, PageTitle } from "@maat-apps/ui/page-header";
+import {
+  AppSection,
+  SecuritySection,
+  SettingsDrawer,
+} from "@maat-apps/ui/settings-sections";
 import { useInstallPrompt } from "../../hooks/use-install-prompt";
 import { useTranslation } from "../../i18n/use-translation";
 import { appLock } from "../../lib/app-lock";
+import { appSettings } from "../../lib/app-settings";
 import { updateApp } from "../../lib/app-update";
 
-// A starting point, not a destination — this app's real Settings screen
-// (once it has one) is where install/update actions like these normally
-// live; see routines' or notes' own settings-app-section.tsx and
-// settings-security-section.tsx for that pattern once this app is past its
-// first view.
+// A starting point, not a destination: a header with the settings gear and
+// the settings every app shares (@maat-apps/ui/settings-sections). Add
+// LanguageSection with a second locale, and DataSection (plus the update
+// snapshot's restore row) once the app keeps data — see notes'
+// settings-panel.tsx.
 export function HomeView() {
   const { t } = useTranslation();
   const install = useInstallPrompt();
-  const [updating, setUpdating] = useState(false);
-  const { lock } = useAppSettings();
-  const [lockSupported, setLockSupported] = useState(false);
-  const [lockError, setLockError] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    void appLock.isSupported().then((supported) => {
-      if (active) setLockSupported(supported);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  async function toggleAppLock() {
-    setLockError(false);
-    if (lock) {
-      appLock.disable();
-      return;
-    }
-    try {
-      await appLock.enrol();
-    } catch {
-      // Cancelling the platform prompt lands here too; leave the lock off.
-      setLockError(true);
-    }
-  }
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
-    <main className="grid min-h-dvh place-items-center gap-6 p-8 text-center">
-      <h1 className="text-xl">{t("welcome")}</h1>
-      <div className="flex flex-col gap-3 text-sm">
-        <div className="flex flex-col gap-1">
-          <span>
-            {install.state === "installed"
-              ? t("installAppInstalled")
-              : install.state === "available"
-                ? t("installAppDescription")
-                : t("installAppUnavailable")}
-          </span>
-          <button
-            type="button"
-            className="border-input rounded-lg border px-4 py-2 disabled:opacity-50"
-            disabled={install.state !== "available"}
-            onClick={() => void install.install()}
-          >
-            {t("installAppAction")}
-          </button>
-        </div>
-        <div className="flex flex-col gap-1">
-          <span>
-            {lockSupported ? t("appLockDescription") : t("appLockUnsupported")}
-          </span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={lock !== null}
-            className="border-input rounded-lg border px-4 py-2 disabled:opacity-50"
-            disabled={!lockSupported}
-            onClick={() => void toggleAppLock()}
-          >
-            {t("appLock")}
-          </button>
-          {lockError && <span role="alert">{t("appLockFailed")}</span>}
-        </div>
-        <div className="flex flex-col gap-1">
-          <span>{t("updateAppDescription")}</span>
-          <button
-            type="button"
-            className="border-input rounded-lg border px-4 py-2 disabled:opacity-50"
-            disabled={updating}
-            onClick={() => {
-              setUpdating(true);
-              void updateApp();
+    <div className="mx-auto flex min-h-dvh w-[min(100%,480px)] flex-col gap-4 px-5 pt-28">
+      <PageHeader>
+        <PageTitle>{t("welcome")}</PageTitle>
+        <Button
+          variant="ghost"
+          size="icon-lg"
+          aria-label={t("settings")}
+          onClick={() => setSettingsOpen(true)}
+        >
+          <Gear className="size-6" />
+        </Button>
+      </PageHeader>
+      <SettingsDrawer
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        title={t("settings")}
+      >
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-2.5">
+          <SecuritySection
+            lock={appLock}
+            settings={appSettings}
+            labels={{
+              title: t("sectionSecurity"),
+              appLock: t("appLock"),
+              appLockDescription: t("appLockDescription"),
+              appLockUnsupported: t("appLockUnsupported"),
+              appLockFailed: t("appLockFailed"),
+              relockAfter: t("relockAfter"),
+              relockAfterDescription: t("relockAfterDescription"),
+              relockNow: t("relockNow"),
+              relock30s: t("relock30s"),
+              relockClose: t("relockClose"),
+              appLockNotice: t("appLockNotice"),
+              appLockEncryptedNotice: t("appLockEncryptedNotice"),
             }}
-          >
-            {updating ? t("updateAppBusy") : t("updateAppAction")}
-          </button>
+          />
+          <AppSection
+            install={install}
+            updateApp={updateApp}
+            onStatus={() => undefined}
+            labels={{
+              title: t("sectionApp"),
+              installApp: t("installApp"),
+              installAppDescription: t("installAppDescription"),
+              installAppInstalled: t("installAppInstalled"),
+              installAppUnavailable: t("installAppUnavailable"),
+              installAppAction: t("installAppAction"),
+              updateApp: t("updateApp"),
+              updateAppDescription: t("updateAppDescription"),
+              updateAppAction: t("updateAppAction"),
+              updateAppBusy: t("updateAppBusy"),
+              updateConfirmTitle: t("updateConfirmTitle"),
+              updateConfirmDescription: t("updateConfirmDescription"),
+              cancel: t("cancel"),
+            }}
+          />
         </div>
-      </div>
-    </main>
+      </SettingsDrawer>
+    </div>
   );
 }

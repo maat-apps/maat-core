@@ -1,6 +1,6 @@
 import { createAppLock } from "@maat-apps/core/lock";
 
-import { setLockEnrolment } from "./app-settings";
+import { relockAfterMs, setLockEnrolment } from "./app-settings";
 import { encryptionKey } from "./encryption-key";
 
 // NEVER change this once the app has users: it's part of how their data is
@@ -16,6 +16,7 @@ export const appLock = createAppLock({
   name: "{{APP_NAME}}",
   keyInfo: HKDF_INFO,
   keyHolder: encryptionKey,
+  relockAfterMs,
   saveEnrolment: setLockEnrolment,
   data: {
     rewrite: () => {},

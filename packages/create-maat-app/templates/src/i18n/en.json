@@ -20,5 +20,18 @@
   "eraseDataWarningTitle": "This will erase your data",
   "eraseDataWarningDescription": "Your data is encrypted and can only be read with a working fingerprint unlock. Since that isn't available right now, turning off the lock permanently erases it — there is no way to recover it afterwards.",
   "eraseDataConfirm": "Erase and continue",
-  "eraseDataCancel": "Cancel"
+  "eraseDataCancel": "Cancel",
+  "settings": "Settings",
+  "cancel": "Cancel",
+  "sectionSecurity": "Security",
+  "sectionApp": "App",
+  "updateConfirmTitle": "Update now?",
+  "updateConfirmDescription": "The app reloads with its newest version.",
+  "appLockNotice": "A convenience lock only — it does not encrypt your data.",
+  "appLockEncryptedNotice": "Your data is encrypted with a key derived from your fingerprint. If it stops working, it cannot be recovered.",
+  "relockAfter": "Lock again",
+  "relockAfterDescription": "After leaving the app.",
+  "relockNow": "Right away",
+  "relock30s": "After 30 s",
+  "relockClose": "When closed"
 }

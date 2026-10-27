@@ -138,6 +138,9 @@ replaceTokens(path.join(targetDir, "src", "lib", "storage-keys.ts"), {
 replaceTokens(path.join(targetDir, "tests", "unit", "reset-indexeddb.ts"), {
   "{{APP_NAME}}": appName,
 });
+replaceTokens(path.join(targetDir, "e2e", "utils.ts"), {
+  "{{APP_NAME}}": appName,
+});
 replaceTokens(path.join(targetDir, "CLAUDE.md"), {
   "{{APP_NAME}}": appName,
   "{{MOBILE_LINE}}": desktop
