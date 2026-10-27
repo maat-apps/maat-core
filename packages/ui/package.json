@@ -1,6 +1,6 @@
 {
   "name": "@maat-apps/ui",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "Shared UI components for maat-apps repos — extracted from routines, per maat-apps/maat-core#3.",
   "type": "module",
   "license": "MIT",
@@ -104,6 +104,10 @@
     "./settings-primitives": {
       "types": "./dist/settings-primitives.d.ts",
       "import": "./dist/settings-primitives.js"
+    },
+    "./settings-sections": {
+      "types": "./dist/settings-sections.d.ts",
+      "import": "./dist/settings-sections.js"
     },
     "./smart-back": {
       "types": "./dist/smart-back.d.ts",

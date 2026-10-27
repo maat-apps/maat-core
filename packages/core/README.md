@@ -4,24 +4,26 @@ Browser-platform plumbing shared by `maat-apps` apps — no UI (components
 live in [`@maat-apps/ui`](../ui)). One package, one subpath per concern, so
 an app's bundle only contains what it imports.
 
-| Import                       | What                                              |
-| ---------------------------- | ------------------------------------------------- |
-| `@maat-apps/core/storage`    | IndexedDB key-value store                         |
-| `@maat-apps/core/persisted`  | In-memory + IndexedDB store (e.g. settings)       |
-| `@maat-apps/core/local`      | An app's data: local store, backup, lock wiring   |
-| `@maat-apps/core/github`     | An app's data in a GitHub repository (+ local)    |
-| `@maat-apps/core/crypto`     | WebAuthn PRF → AES-GCM encryption, base64url      |
-| `@maat-apps/core/lock`       | App lock: WebAuthn gate + optional encryption     |
-| `@maat-apps/core/locale`     | Persisted locale store with device detection      |
-| `@maat-apps/core/i18n`       | `useTranslation` hook (React)                     |
-| `@maat-apps/core/sw`         | The app's service worker, as a factory            |
-| `@maat-apps/core/update`     | "Update app" with a pre-update data snapshot      |
-| `@maat-apps/core/install`    | `useInstallPrompt` hook for "Install app" (React) |
-| `@maat-apps/core/validation` | Lenient per-entry Valibot parsing helpers         |
-| `@maat-apps/core/backup`     | Backup envelope, backup files, share/download     |
+| Import                         | What                                              |
+| ------------------------------ | ------------------------------------------------- |
+| `@maat-apps/core/storage`      | IndexedDB key-value store                         |
+| `@maat-apps/core/persisted`    | In-memory + IndexedDB store (e.g. settings)       |
+| `@maat-apps/core/app-settings` | Every app's settings: lock, relock, installed     |
+| `@maat-apps/core/local`        | An app's data: local store, backup, lock wiring   |
+| `@maat-apps/core/github`       | An app's data in a GitHub repository (+ local)    |
+| `@maat-apps/core/crypto`       | WebAuthn PRF → AES-GCM encryption, base64url      |
+| `@maat-apps/core/lock`         | App lock: WebAuthn gate + optional encryption     |
+| `@maat-apps/core/locale`       | Persisted locale store with device detection      |
+| `@maat-apps/core/i18n`         | `useTranslation` hook (React)                     |
+| `@maat-apps/core/sw`           | The app's service worker, as a factory            |
+| `@maat-apps/core/update`       | "Update app" with a pre-update data snapshot      |
+| `@maat-apps/core/install`      | `useInstallPrompt` hook for "Install app" (React) |
+| `@maat-apps/core/validation`   | Lenient per-entry Valibot parsing helpers         |
+| `@maat-apps/core/backup`       | Backup envelope, backup files, share/download     |
 
 `react` is an optional peer dependency, needed only for `/i18n` and
-`/install`; `valibot` likewise, only for `/validation` and `/lock`.
+`/install`; `valibot` likewise, only for `/validation`, `/lock` and
+`/app-settings`.
 
 ## `storage`
 
@@ -106,8 +108,9 @@ export const appLock = createAppLock({
 - `disable()` (unlocked, key in memory): data is rewritten unencrypted.
   `disableAndErase()` is the escape hatch when the authenticator is gone —
   the data can't be decrypted, so it's erased; the gate warns first.
-- Persist the enrolment in the app's settings (`/persisted`), parsing it
-  with `parseLockEnrolment` — anything corrupt reads as "no lock".
+- Persist the enrolment in the app's settings (`/app-settings` does it,
+  parsing it with `parseLockEnrolment` — anything corrupt reads as "no
+  lock").
 - Storage: encrypt on write when `encryptionKey.get()` is set; before the
   first read, if the stored enrolment has `encryptionSupported`, `await
 encryptionKey.whenSet()`. `/update`'s `encryption: { getKey:
@@ -206,6 +209,44 @@ The pattern from [`docs/storage.md`](../../docs/storage.md) as a store:
 `set(patch)`, `reset()`, and a separate **ready** signal (`isReady`,
 `subscribeReady`) for anything that must not treat "not loaded yet" as "the
 defaults" — e.g. an app-lock gate.
+
+## `app-settings`
+
+```ts
+import { createAppSettings } from "@maat-apps/core/app-settings";
+
+export const appSettings = createAppSettings({
+  storage, // from createKeyValueStore
+  key: "my-app-settings",
+  // Optional: the app's own preferences, each field validated on its own.
+  extra: {
+    defaults: { selectedPlan: null as string | null },
+    parse: (stored) => ({
+      selectedPlan:
+        typeof stored.selectedPlan === "string" ? stored.selectedPlan : null,
+    }),
+  },
+});
+
+createAppLock({
+  saveEnrolment: appSettings.setLockEnrolment,
+  relockAfterMs: appSettings.relockAfterMs,
+  // …
+});
+createInstallPrompt({
+  isInstalled: () => appSettings.getSnapshot().installed,
+  subscribe: appSettings.subscribe,
+  markInstalled: appSettings.markInstalled,
+});
+```
+
+A `persisted` store holding what every app keeps outside its data: `lock`
+(the enrolment), `relockAfter` (`RELOCK_CHOICES`: `"now"`, `"30s"`,
+`"close"`; `relockAfterMsFor`, `parseRelockAfter`) and `installed`, plus
+the app's `extra` fields. On top of the store: `setLockEnrolment`,
+`setRelockAfter`, `relockAfterMs` (the lock's option), `markInstalled`
+and `isReadyOnServer`. `@maat-apps/ui/settings-sections`' `SecuritySection`
+takes it as is.
 
 ## `local`
 

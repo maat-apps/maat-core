@@ -2,6 +2,7 @@ import { defineConfig } from "tsup";
 
 export default defineConfig({
   entry: [
+    "src/app-settings.ts",
     "src/backup.ts",
     "src/crypto.ts",
     "src/github.ts",

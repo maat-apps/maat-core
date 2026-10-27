@@ -20,6 +20,7 @@ export * from "./progress-ring";
 export * from "./reset-button";
 export * from "./select";
 export * from "./settings-primitives";
+export * from "./settings-sections";
 export * from "./sortable-list";
 export * from "./switch";
 export * from "./textarea";

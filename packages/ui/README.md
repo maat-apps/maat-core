@@ -77,6 +77,14 @@ everything from one barrel for convenience.
 - `settings-primitives.tsx` — `SettingsSection`/`SettingsRow`: a titled
   section + labeled-row pattern for any settings-style list, not just app
   settings.
+- `settings-sections.tsx` — the settings every app shares:
+  `SettingsDrawer` (settings as a bottom drawer), `LanguageSection`,
+  `SecuritySection` (the lock switch, "lock again" after, the notice;
+  takes core's `AppLock` and `/app-settings` store), `AppSection` (install,
+  update after a confirmation, optionally restoring the pre-update
+  snapshot) and `DataSection` (backup export/import with a confirmation;
+  `children` add the app's own rows). Typed structurally against
+  `@maat-apps/core`; every string is a `labels` entry from the app.
 - `drawer.tsx` — the Base UI `Drawer` wrapper. With `showSwipeHandle` it
   shows a grab pill and can be swiped down to dismiss; nested drawers stack
   (the parent shrinks and scales behind the child, which is intended).
@@ -121,7 +129,7 @@ everything from one barrel for convenience.
   message otherwise.
 - `app-lock-gate.tsx` — the app lock screen: renders `children` once the
   session passed the lock, otherwise a text-free lock screen (the same in
-  every app) that opens the platform prompt by itself on each arrival and
+  every app: a large fingerprint) that opens the platform prompt by itself on each arrival and
   on tap, where the browser needs one. A relock covers the app instead of
   unmounting it. When the device lets the user down, it adds the "turn off
   the lock" escape hatch (with an erase warning when the lock encrypts). Takes `@maat-apps/core/lock`'s

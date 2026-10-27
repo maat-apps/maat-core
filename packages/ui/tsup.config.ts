@@ -26,6 +26,7 @@ export default defineConfig({
     "src/reset-button.tsx",
     "src/select.tsx",
     "src/settings-primitives.tsx",
+    "src/settings-sections.tsx",
     "src/smart-back.ts",
     "src/sortable-list.tsx",
     "src/switch.tsx",
