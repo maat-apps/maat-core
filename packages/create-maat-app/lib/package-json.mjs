@@ -39,15 +39,15 @@ export function buildPackageJson(appName, desktop = false) {
     },
     dependencies: {
       "@base-ui/react": "^1.8.0",
-      "@maat-apps/core": "^0.4.0",
-      "@maat-apps/ui": "^0.8.0",
+      "@maat-apps/core": "^0.7.0",
+      "@maat-apps/ui": "^0.13.0",
       react: "^19",
       "react-dom": "^19",
       "react-router": "^7",
       valibot: "^1.5.0",
     },
     devDependencies: {
-      "@maat-apps/config": "^0.1.0",
+      "@maat-apps/config": "^0.2.0",
       "@playwright/test": "^1.63.0",
       "@tailwindcss/postcss": "^4",
       "@testing-library/react": "^16.3.3",
