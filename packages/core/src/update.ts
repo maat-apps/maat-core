@@ -30,6 +30,13 @@ export type UpdateSnapshot<B> = {
   /** Applies the stored snapshot; false if there was none to apply. */
   restore(): Promise<boolean>;
   discard(): Promise<void>;
+  /**
+   * Stores the snapshot again under the current key (or none), after the
+   * app lock started, stopped or changed encrypting. `previousKey` is the
+   * key it was stored under until now. A snapshot neither key opens is
+   * left as it was.
+   */
+  reencrypt(previousKey: CryptoKey | null): Promise<void>;
   /** Resolves once the initial existence check has finished. Mainly for tests. */
   whenLoaded(): Promise<void>;
 };
@@ -125,6 +132,23 @@ export function createUpdateSnapshot<B>({
       if (!snapshot) return false;
       backup.apply(snapshot);
       return true;
+    },
+    async reencrypt(previousKey) {
+      try {
+        const stored = await storage.get<unknown>(key);
+        if (stored == null) return;
+        const currentKey = encryption?.getKey() ?? null;
+        if (isEncryptedBlob(stored) ? !previousKey : !currentKey) return;
+        const raw = isEncryptedBlob(stored)
+          ? await decryptJson<unknown>(previousKey as CryptoKey, stored)
+          : stored;
+        await storage.set(
+          key,
+          currentKey ? await encryptJson(currentKey, raw) : raw,
+        );
+      } catch {
+        // Not readable with `previousKey`: leave it as it was.
+      }
     },
     async discard() {
       try {

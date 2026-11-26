@@ -25,11 +25,41 @@ export { BackupError } from "./backup";
 
 /** What the app lock needs from each piece of stored data. */
 export type LockDataPart = {
-  /** Writes the data back under the key holder's current key (or none). */
-  rewrite: () => void | Promise<void>;
+  /**
+   * Writes the data back under the key holder's current key (or none).
+   * `previousKey` is the key it was under until now, for data that isn't
+   * held in memory and has to be read back first (the update snapshot).
+   */
+  rewrite: (previousKey?: CryptoKey | null) => void | Promise<void>;
   /** Deletes the data for good. */
   erase: () => void | Promise<void>;
 };
+
+/** Why a store couldn't read what it had stored (`getUnreadable`). */
+export type UnreadableReason =
+  /** Encrypted, but there's no key — e.g. the lock's enrolment was lost. */
+  | "no-key"
+  /** Encrypted, and the key doesn't open it, or the ciphertext is damaged. */
+  | "decrypt-failed"
+  /** Readable, but the app's `parse` refused it. */
+  | "invalid"
+  /** The storage itself failed, so what's stored is unknown. */
+  | "storage-error";
+
+export type UnreadableStoredValue = {
+  reason: UnreadableReason;
+  /**
+   * The storage key the unread value was moved to, untouched, so the store
+   * could carry on (`unreadableKeyFor`). `null` when it was left where it
+   * was: then nothing is written this session, so it can't be overwritten.
+   */
+  movedTo: string | null;
+};
+
+/** Where a store moves a stored value it can't read, rather than lose it. */
+export function unreadableKeyFor(key: string): string {
+  return `${key}-unreadable`;
+}
 
 export type LocalStoreOptions<T, S = unknown> = {
   storage: KeyValueStore;
@@ -75,6 +105,13 @@ export type LocalStore<T, S = unknown> = LockDataPart & {
   serialize(value?: T): S;
   /** The app's `parse` (e.g. for a backup's data). */
   parse(stored: unknown): T;
+  /**
+   * Set when the first read found something it couldn't read. The store
+   * then starts from `empty`, but never by overwriting that value: it's
+   * moved aside first, or — if that fails — left in place with writes
+   * turned off for this session. Tell the user; listeners are notified.
+   */
+  getUnreadable(): UnreadableStoredValue | null;
 };
 
 export function createLocalStore<T, S = T>({
@@ -96,38 +133,98 @@ export function createLocalStore<T, S = T>({
   // runs: encrypting is async, so two overlapping writes could otherwise
   // land out of order and leave the older value stored.
   let writes: Promise<void> = Promise.resolve();
+  // No write may land before the first read has looked at what's stored:
+  // it could otherwise replace data the read would have found unreadable
+  // and moved aside. Released by that read, or by an erase.
+  let releaseWrites: () => void = () => undefined;
+  const writesReleased = new Promise<void>((resolve) => {
+    releaseWrites = resolve;
+  });
+  let unreadable: UnreadableStoredValue | null = null;
+  // Set when an unreadable value had to stay where it is.
+  let writesBlocked = false;
+  // A first read still running when the data is erased must leave it be.
+  let erased = false;
 
   function emitChange(): void {
     for (const listener of listeners) listener();
   }
 
-  async function load(): Promise<void> {
-    if (encryption && (await encryption.encrypts())) {
-      await encryption.keyHolder.whenSet();
-    }
+  /** Moves `stored` aside so a write can't destroy it; else stops writing. */
+  async function setAside(
+    stored: unknown,
+    reason: UnreadableReason,
+  ): Promise<void> {
+    const target = unreadableKeyFor(key);
     try {
-      const stored = await storage.get<unknown>(key);
-      const cryptoKey = encryption?.keyHolder.get() ?? null;
-      const raw =
-        cryptoKey && isEncryptedBlob(stored)
-          ? await decryptJson<unknown>(cryptoKey, stored)
-          : stored;
-      if (raw != null && !changedBeforeLoad) value = parse(raw);
+      const earlier = await storage.get<unknown>(target);
+      if (erased) return;
+      // The same value moved aside on an earlier launch whose delete failed.
+      const alreadyThere =
+        earlier != null && JSON.stringify(earlier) === JSON.stringify(stored);
+      if (earlier == null || alreadyThere) {
+        if (!alreadyThere) await storage.set(target, stored);
+        unreadable = { reason, movedTo: target };
+        await storage.delete(key).catch(() => undefined);
+        return;
+      }
     } catch {
-      // Keep what's in memory — same as a corrupt or missing value.
+      // Couldn't move it: leave it where it is, below.
+    }
+    writesBlocked = true;
+    unreadable = { reason, movedTo: null };
+  }
+
+  async function read(stored: unknown): Promise<void> {
+    if (erased) return;
+    const cryptoKey = encryption?.keyHolder.get() ?? null;
+    let raw = stored;
+    if (encryption && isEncryptedBlob(stored)) {
+      if (!cryptoKey) return setAside(stored, "no-key");
+      try {
+        raw = await decryptJson<unknown>(cryptoKey, stored);
+      } catch {
+        return setAside(stored, "decrypt-failed");
+      }
+    }
+    let parsed: T;
+    try {
+      parsed = parse(raw);
+    } catch {
+      return setAside(stored, "invalid");
+    }
+    if (!changedBeforeLoad) value = parsed;
+  }
+
+  async function load(): Promise<void> {
+    try {
+      if (encryption && (await encryption.encrypts())) {
+        await encryption.keyHolder.whenSet();
+      }
+      const stored = await storage.get<unknown>(key);
+      if (stored != null) await read(stored);
+    } catch {
+      // What's stored is unknown, so nothing may be written over it.
+      writesBlocked = true;
+      unreadable = { reason: "storage-error", movedTo: null };
     } finally {
       ready = true;
+      releaseWrites();
       emitChange();
     }
   }
 
   function whenLoaded(): Promise<void> {
-    if (typeof window === "undefined") return Promise.resolve();
+    if (typeof window === "undefined") {
+      releaseWrites();
+      return Promise.resolve();
+    }
     loaded ??= load();
     return loaded;
   }
 
   async function write(): Promise<void> {
+    if (writesBlocked) return;
     try {
       const stored = serialize(value);
       const cryptoKey = encryption?.keyHolder.get() ?? null;
@@ -141,8 +238,23 @@ export function createLocalStore<T, S = T>({
   }
 
   function persist(): Promise<void> {
-    writes = writes.then(write);
+    void whenLoaded();
+    writes = writes.then(() => writesReleased).then(write);
     return writes;
+  }
+
+  // Deliberate, so it doesn't wait for the first read: with an encrypting
+  // lock whose key is gone for good, that read never comes.
+  async function erase(): Promise<void> {
+    if (!ready) changedBeforeLoad = true;
+    erased = true;
+    value = empty;
+    unreadable = null;
+    writesBlocked = false;
+    releaseWrites();
+    emitChange();
+    await persist();
+    await storage.delete(unreadableKeyFor(key)).catch(() => undefined);
   }
 
   function replace(next: T): Promise<void> {
@@ -177,8 +289,9 @@ export function createLocalStore<T, S = T>({
     },
     serialize: (of = value) => serialize(of),
     parse,
-    rewrite: persist,
-    erase: () => replace(empty),
+    getUnreadable: () => unreadable,
+    rewrite: () => persist(),
+    erase,
   };
 }
 
@@ -299,23 +412,27 @@ export function createLocalBackup<T, S>({
     share: (backup = create()) => shareBackup(backup),
     snapshot,
     updateApp: () => updateApp(snapshot),
-    lockPart: { rewrite: () => undefined, erase: () => snapshot.discard() },
+    lockPart: {
+      rewrite: (previousKey = null) => snapshot.reencrypt(previousKey),
+      erase: () => snapshot.discard(),
+    },
   };
 }
 
 /**
  * The app lock's `data` (`createAppLock`) for every piece of stored data:
- * rewrite each under the new key, erase them all.
+ * rewrite each under the new key (passing on the previous one), erase them
+ * all.
  */
 export function lockData(...parts: LockDataPart[]): {
-  rewrite: () => void;
+  rewrite: (previousKey?: CryptoKey | null) => void;
   erase: () => Promise<void>;
 } {
   return {
-    rewrite() {
+    rewrite(previousKey = null) {
       for (const part of parts) {
         void Promise.resolve()
-          .then(part.rewrite)
+          .then(() => part.rewrite(previousKey))
           .catch(() => undefined);
       }
     },
