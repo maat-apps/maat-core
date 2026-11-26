@@ -312,13 +312,20 @@ createAppLock({ /* … */ data: lockData(notesStore, backups.lockPart) });
   `replace`/`update` (write-through, encrypted whenever the key holder has
   a key; writes never land out of order), `rewrite`/`erase` for the lock.
   With an encrypting lock, the first read waits for the key; a change made
-  before that read finishes wins over what's stored.
+  before that read finishes wins over what's stored. No write lands before
+  that read, and a stored value it can't read (no key, the key doesn't
+  open it, `parse` throws, the storage fails) is never overwritten: it's
+  moved to `unreadableKeyFor(key)`, or left in place with writes off for
+  the session. `getUnreadable()` reports it — tell the user. `erase` is
+  the exception: it doesn't wait, and deletes the moved-aside value too.
 - `createLocalBackup`: `create`, `parse` (file text) / `parseValue`,
   `apply`, `download`/`share`, the pre-update `snapshot` and `updateApp`.
   `extras` adds fields next to `data` (e.g. a locale), `parseData` lets the
   app refuse a backup, `afterApply` drops derived caches.
 - `lockData(...parts)`: the app lock's `rewrite` (each part, a failure
-  doesn't stop the rest) and `erase` (all parts).
+  doesn't stop the rest; the previous key is passed on, so the update
+  snapshot is re-encrypted rather than left in its old form) and `erase`
+  (all parts).
 
 ## `github`
 

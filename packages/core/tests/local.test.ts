@@ -11,6 +11,7 @@ import {
   createLocalStore,
   type LocalStore,
   lockData,
+  unreadableKeyFor,
 } from "../src/local";
 import { createKeyHolder } from "../src/lock";
 import type { KeyValueStore } from "../src/storage";
@@ -18,6 +19,7 @@ import { memoryStorage } from "./memory-storage";
 
 const KEY = "test-data";
 const SNAPSHOT_KEY = "test-snapshot";
+const UNREADABLE_KEY = unreadableKeyFor(KEY);
 
 type Data = { items: string[] };
 
@@ -74,6 +76,16 @@ describe("createLocalStore", () => {
 
     expect(store.getSnapshot()).toEqual([]);
     expect(store.isReady()).toBe(true);
+  });
+
+  it("reports nothing unreadable after a normal read", async () => {
+    const store = itemsStore(
+      memoryStorage({ [KEY]: { items: ["a"] } }).storage,
+    );
+
+    await store.whenLoaded();
+
+    expect(store.getUnreadable()).toBeNull();
   });
 
   it("serves the empty value on the server", () => {
@@ -204,6 +216,187 @@ describe("createLocalStore", () => {
 
       expect(store.getSnapshot()).toEqual([]);
     });
+  });
+});
+
+describe("createLocalStore with something it can't read", () => {
+  async function encryptedItems(items: string[]) {
+    const key = await testKey();
+    return { key, blob: await encryptJson(key, { items }) };
+  }
+
+  it("moves encrypted data aside when there's no key to open it", async () => {
+    const { blob } = await encryptedItems(["secret"]);
+    const { storage, data } = memoryStorage({ [KEY]: blob });
+    // The lock's enrolment was lost, so the store doesn't wait for a key.
+    const store = itemsStore(storage, {
+      keyHolder: createKeyHolder(),
+      encrypts: async () => false,
+    });
+
+    await store.whenLoaded();
+
+    expect(store.getSnapshot()).toEqual([]);
+    expect(store.getUnreadable()).toEqual({
+      reason: "no-key",
+      movedTo: UNREADABLE_KEY,
+    });
+    expect(data.get(UNREADABLE_KEY)).toEqual(blob);
+    expect(data.has(KEY)).toBe(false);
+  });
+
+  it("moves aside data the key doesn't open", async () => {
+    const { blob } = await encryptedItems(["secret"]);
+    const keyHolder = createKeyHolder();
+    keyHolder.set(await testKey());
+    const { storage, data } = memoryStorage({ [KEY]: blob });
+    const store = itemsStore(storage, {
+      keyHolder,
+      encrypts: async () => true,
+    });
+
+    await store.whenLoaded();
+
+    expect(store.getUnreadable()?.reason).toBe("decrypt-failed");
+    expect(data.get(UNREADABLE_KEY)).toEqual(blob);
+  });
+
+  it("moves aside a value the app's parse refuses", async () => {
+    const { storage, data } = memoryStorage({ [KEY]: "junk" });
+    const store = itemsStore(storage);
+
+    await store.whenLoaded();
+
+    expect(store.getUnreadable()?.reason).toBe("invalid");
+    expect(data.get(UNREADABLE_KEY)).toBe("junk");
+  });
+
+  it("never overwrites the moved value with new changes", async () => {
+    const { blob } = await encryptedItems(["secret"]);
+    const { storage, data } = memoryStorage({ [KEY]: blob });
+    const store = itemsStore(storage, {
+      keyHolder: createKeyHolder(),
+      encrypts: async () => false,
+    });
+    await store.whenLoaded();
+
+    await store.replace(["new"]);
+
+    expect(data.get(KEY)).toEqual({ items: ["new"] });
+    expect(data.get(UNREADABLE_KEY)).toEqual(blob);
+  });
+
+  it("moves the value aside before a change made during the first read lands", async () => {
+    const { storage, data } = memoryStorage({ [KEY]: "junk" });
+    const store = itemsStore(storage);
+
+    await store.replace(["new"]);
+
+    expect(data.get(UNREADABLE_KEY)).toBe("junk");
+    expect(data.get(KEY)).toEqual({ items: ["new"] });
+  });
+
+  it("leaves it in place and stops writing when it can't be moved", async () => {
+    const { storage, data } = memoryStorage({
+      [KEY]: "junk",
+      [UNREADABLE_KEY]: "moved earlier",
+    });
+    const store = itemsStore(storage);
+    await store.whenLoaded();
+
+    await store.replace(["new"]);
+
+    expect(store.getUnreadable()).toEqual({ reason: "invalid", movedTo: null });
+    expect(store.getSnapshot()).toEqual(["new"]);
+    expect(data.get(KEY)).toBe("junk");
+    expect(data.get(UNREADABLE_KEY)).toBe("moved earlier");
+  });
+
+  it("counts a value already moved on an earlier launch as moved", async () => {
+    const { storage, data } = memoryStorage({
+      [KEY]: "junk",
+      [UNREADABLE_KEY]: "junk",
+    });
+    const store = itemsStore(storage);
+    await store.whenLoaded();
+
+    await store.replace(["new"]);
+
+    expect(store.getUnreadable()?.movedTo).toBe(UNREADABLE_KEY);
+    expect(data.get(KEY)).toEqual({ items: ["new"] });
+  });
+
+  it("stops writing when moving it aside fails", async () => {
+    const { storage, data } = memoryStorage({ [KEY]: "junk" });
+    vi.spyOn(storage, "set").mockRejectedValueOnce(new Error("full"));
+    const store = itemsStore(storage);
+    await store.whenLoaded();
+
+    await store.replace(["new"]);
+
+    expect(store.getUnreadable()?.movedTo).toBeNull();
+    expect(data.get(KEY)).toBe("junk");
+  });
+
+  it("stops writing when the storage can't be read at all", async () => {
+    const { storage } = memoryStorage();
+    vi.spyOn(storage, "get").mockRejectedValue(new Error("broken"));
+    const set = vi.spyOn(storage, "set");
+    const store = itemsStore(storage);
+    await store.whenLoaded();
+
+    await store.replace(["new"]);
+
+    expect(store.getUnreadable()).toEqual({
+      reason: "storage-error",
+      movedTo: null,
+    });
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("notifies listeners once the unreadable value is reported", async () => {
+    const store = itemsStore(memoryStorage({ [KEY]: "junk" }).storage);
+    const reported = vi.fn(() => store.getUnreadable());
+    store.subscribe(reported);
+
+    await store.whenLoaded();
+
+    expect(reported).toHaveLastReturnedWith(
+      expect.objectContaining({ reason: "invalid" }),
+    );
+  });
+
+  it("erases without waiting for a key that never comes", async () => {
+    const { blob } = await encryptedItems(["secret"]);
+    const { storage, data } = memoryStorage({
+      [KEY]: blob,
+      [UNREADABLE_KEY]: "moved earlier",
+    });
+    const store = itemsStore(storage, {
+      keyHolder: createKeyHolder(),
+      encrypts: async () => true,
+    });
+    void store.whenLoaded();
+
+    await store.erase();
+
+    expect(data.get(KEY)).toEqual({ items: [] });
+    expect(data.has(UNREADABLE_KEY)).toBe(false);
+    expect(store.getUnreadable()).toBeNull();
+  });
+
+  it("lets an erase write again after writes were stopped", async () => {
+    const { storage, data } = memoryStorage({
+      [KEY]: "junk",
+      [UNREADABLE_KEY]: "moved earlier",
+    });
+    const store = itemsStore(storage);
+    await store.whenLoaded();
+
+    await store.erase();
+    await store.replace(["new"]);
+
+    expect(data.get(KEY)).toEqual({ items: ["new"] });
   });
 });
 
@@ -370,6 +563,55 @@ describe("createLocalBackup", () => {
     expect(data.has(SNAPSHOT_KEY)).toBe(false);
   });
 
+  it("encrypts a snapshot taken before the lock started encrypting", async () => {
+    const { storage, data } = memoryStorage();
+    const keyHolder = createKeyHolder();
+    const store = itemsStore(storage);
+    await store.replace(["a"]);
+    const backups = createLocalBackup({
+      app: "test",
+      version: 1,
+      store,
+      messages,
+      snapshot: { storage, key: SNAPSHOT_KEY, keyHolder },
+    });
+    await backups.snapshot.save();
+    expect(isEncryptedBlob(data.get(SNAPSHOT_KEY))).toBe(false);
+
+    keyHolder.set(await testKey());
+    await backups.lockPart.rewrite(null);
+
+    expect(isEncryptedBlob(data.get(SNAPSHOT_KEY))).toBe(true);
+    await expect(backups.snapshot.read()).resolves.toMatchObject({
+      data: { items: ["a"] },
+    });
+  });
+
+  it("keeps the snapshot readable once the lock stops encrypting", async () => {
+    const { storage, data } = memoryStorage();
+    const keyHolder = createKeyHolder();
+    const previousKey = await testKey();
+    keyHolder.set(previousKey);
+    const store = itemsStore(storage);
+    await store.replace(["a"]);
+    const backups = createLocalBackup({
+      app: "test",
+      version: 1,
+      store,
+      messages,
+      snapshot: { storage, key: SNAPSHOT_KEY, keyHolder },
+    });
+    await backups.snapshot.save();
+
+    keyHolder.set(null);
+    await backups.lockPart.rewrite(previousKey);
+
+    expect(isEncryptedBlob(data.get(SNAPSHOT_KEY))).toBe(false);
+    await expect(backups.snapshot.read()).resolves.toMatchObject({
+      data: { items: ["a"] },
+    });
+  });
+
   it("downloads and shares a fresh backup by default", async () => {
     const { storage } = memoryStorage();
     const backups = kit(itemsStore(storage), storage);
@@ -404,6 +646,17 @@ describe("createLocalBackup", () => {
 });
 
 describe("lockData", () => {
+  it("passes the previous key on to every part", async () => {
+    const part = { rewrite: vi.fn(), erase: vi.fn() };
+    const previousKey = await testKey();
+
+    lockData(part).rewrite(previousKey);
+
+    await vi.waitFor(() =>
+      expect(part.rewrite).toHaveBeenCalledWith(previousKey),
+    );
+  });
+
   it("rewrites every part, even past one that fails", async () => {
     const good = { rewrite: vi.fn(), erase: vi.fn() };
     const bad = {

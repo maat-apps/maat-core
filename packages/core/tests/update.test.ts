@@ -149,6 +149,61 @@ describe("createUpdateSnapshot", () => {
 
       await expect(other.read()).resolves.toBeNull();
     });
+
+    it("re-encrypts a snapshot from the previous key under the current one", async () => {
+      const { storage, data } = memoryStorage();
+      const previousKey = await testKey();
+      const saved = await snapshotFor(
+        storage,
+        backupAdapter(),
+        previousKey,
+      ).save();
+      const snapshot = snapshotFor(storage, backupAdapter(), await testKey());
+
+      await snapshot.reencrypt(previousKey);
+
+      expect(isEncryptedBlob(data.get(KEY))).toBe(true);
+      await expect(snapshot.read()).resolves.toEqual(saved);
+    });
+
+    it("leaves a snapshot the previous key doesn't open as it was", async () => {
+      const { storage, data } = memoryStorage();
+      await snapshotFor(storage, backupAdapter(), await testKey()).save();
+      const before = data.get(KEY);
+
+      await snapshotFor(storage).reencrypt(await testKey());
+
+      expect(data.get(KEY)).toEqual(before);
+    });
+
+    it("leaves an encrypted snapshot alone without a previous key", async () => {
+      const { storage, data } = memoryStorage();
+      const key = await testKey();
+      await snapshotFor(storage, backupAdapter(), key).save();
+      const before = data.get(KEY);
+
+      await snapshotFor(storage, backupAdapter(), key).reencrypt(null);
+
+      expect(data.get(KEY)).toBe(before);
+    });
+  });
+
+  it("re-encrypts nothing when there's no snapshot", async () => {
+    const { storage, data } = memoryStorage();
+
+    await snapshotFor(storage).reencrypt(null);
+
+    expect(data.has(KEY)).toBe(false);
+  });
+
+  it("leaves a plain snapshot plain while there's no key", async () => {
+    const { storage, data } = memoryStorage();
+    await snapshotFor(storage).save();
+    const before = data.get(KEY);
+
+    await snapshotFor(storage).reencrypt(null);
+
+    expect(data.get(KEY)).toBe(before);
   });
 });
 

@@ -211,6 +211,7 @@ describe("enrol", () => {
     expect(enrolment.prfSalt).toEqual(expect.any(String));
     expect(keyHolder.get()).not.toBeNull();
     expect(data.rewrite).toHaveBeenCalledTimes(1);
+    expect(data.rewrite).toHaveBeenCalledWith(null);
   });
 
   it("falls back to a UI gate when PRF returns no secret", async () => {
@@ -299,6 +300,7 @@ describe("disable", () => {
     });
     const { lock, keyHolder, data, getStored } = setup();
     await lock.enrol();
+    const previousKey = keyHolder.get();
     data.rewrite.mockClear();
 
     lock.disable();
@@ -306,6 +308,7 @@ describe("disable", () => {
     expect(getStored()).toBeNull();
     expect(keyHolder.get()).toBeNull();
     expect(data.rewrite).toHaveBeenCalledTimes(1);
+    expect(data.rewrite).toHaveBeenCalledWith(previousKey);
   });
 
   it("stops notifying an unsubscribed listener", () => {

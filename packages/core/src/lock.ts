@@ -113,9 +113,11 @@ export type AppLockOptions = {
     /**
      * Writes the in-memory data back with the holder's current key — right
      * after encryption starts or stops, so nothing stays stored in the old
-     * form until the next unrelated edit.
+     * form until the next unrelated edit. `previousKey` is the key data was
+     * stored under until now (`null` when it wasn't encrypted), for anything
+     * not held in memory that must be read back first.
      */
-    rewrite: () => void;
+    rewrite: (previousKey: CryptoKey | null) => void;
     /**
      * Wipes the app's data (and anything derived from it, like an update
      * snapshot). Only called when the key is gone for good.
@@ -316,7 +318,7 @@ export function createAppLock(options: AppLockOptions): AppLock {
     };
     saveEnrolment(enrolled);
     setSessionUnlocked(true);
-    if (encryptionSupported) data.rewrite();
+    if (encryptionSupported) data.rewrite(null);
     return enrolled;
   }
 
@@ -363,8 +365,9 @@ export function createAppLock(options: AppLockOptions): AppLock {
 
   function disable(): void {
     saveEnrolment(null);
+    const previousKey = keyHolder.get();
     keyHolder.set(null);
-    data.rewrite();
+    data.rewrite(previousKey);
     setSessionUnlocked(true);
   }
 

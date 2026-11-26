@@ -77,6 +77,15 @@ only, and the UI must say so.
 - When encrypted data exists, a module's background load must wait for the
   key (`keyHolder.whenSet()`) before decrypting, instead of racing ahead as
   it does unencrypted.
+- **Never write over what couldn't be read.** A stored value that can't be
+  decrypted (no key, wrong key, damaged) or parsed isn't "empty": treating
+  it as empty means the next edit destroys it for good. `createLocalStore`
+  moves it to `<key>-unreadable` first (or, failing that, stops writing for
+  the session) and reports it through `getUnreadable()`; the app tells the
+  user.
+- When the lock starts or stops encrypting, everything stored is rewritten
+  in the new form — including data that isn't held in memory, like the
+  update snapshot, which `rewrite` reads back with the previous key.
 
 ## Testing seams
 
