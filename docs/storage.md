@@ -82,7 +82,9 @@ only, and the UI must say so.
   it as empty means the next edit destroys it for good. `createLocalStore`
   moves it to `<key>-unreadable` first (or, failing that, stops writing for
   the session) and reports it through `getUnreadable()`; the app tells the
-  user.
+  user. Turning the lock off without its key works the same way
+  (`disableAndSetAside`): the encrypted data goes aside with the lock it
+  was under, so that credential can open it again if it comes back.
 - When the lock starts or stops encrypting, everything stored is rewritten
   in the new form — including data that isn't held in memory, like the
   update snapshot, which `rewrite` reads back with the previous key.

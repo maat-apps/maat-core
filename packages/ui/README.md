@@ -134,7 +134,9 @@ everything from one barrel for convenience.
   every app: a large fingerprint) that opens the platform prompt by itself on each arrival and
   on tap, where the browser needs one. A relock covers the app instead of
   unmounting it. When the device lets the user down, it adds the "turn off
-  the lock" escape hatch (with an erase warning when the lock encrypts). Takes `@maat-apps/core/lock`'s
+  the lock" escape hatch (with an erase warning when the lock encrypts —
+  or, given `labels.setAside` and the lock's `disableAndSetAside`, a
+  warning that the data is put away for that credential instead). Takes `@maat-apps/core/lock`'s
   `AppLock`, the stored enrolment, a `ready` flag (settings loaded) and the
   app's translated `labels`.
 - `backup-password-drawer.tsx` — `BackupPasswordDrawer`, the bottom sheet

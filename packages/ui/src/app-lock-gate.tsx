@@ -19,6 +19,8 @@ export type AppLockGateLock<Enrolment> = {
   verify: (enrolment: Enrolment) => Promise<boolean>;
   disable: () => void;
   disableAndErase: () => Promise<void>;
+  /** With `labels.setAside`, the escape hatch keeps the data instead. */
+  disableAndSetAside?: (enrolment: Enrolment) => Promise<void>;
   isSessionUnlocked: () => boolean;
   /** Notified when the session is unlocked and when it locks again. */
   subscribeToUnlock: (listener: () => void) => () => void;
@@ -33,6 +35,11 @@ export type AppLockGateLabels = {
   eraseDataWarningDescription: string;
   eraseDataConfirm: string;
   eraseDataCancel: string;
+  /**
+   * The warning when turning the lock off moves the data aside (the lock's
+   * `disableAndSetAside`) rather than erasing it.
+   */
+  setAside?: { title: string; description: string; confirm: string };
 };
 
 const lockedOnServer = () => false;
@@ -113,8 +120,9 @@ function usePromptOnArrival(locked: boolean, prompt: () => void): void {
  *
  * The "turn off the lock" escape hatch stays hidden until the device lets
  * the user down (a failed prompt, or no authenticator any more). When the
- * lock encrypts, turning it off without the key erases the data, so the
- * gate warns first.
+ * lock encrypts, turning it off without the key erases the data — or, with
+ * `labels.setAside` and the lock's `disableAndSetAside`, moves it aside for
+ * that credential to open later — so the gate warns first.
  */
 export function AppLockGate<
   Enrolment extends { encryptionSupported: boolean },
@@ -175,6 +183,16 @@ export function AppLockGate<
     };
   }, [lock, locked]);
 
+  const setAside =
+    labels.setAside && lock.disableAndSetAside
+      ? { labels: labels.setAside, run: lock.disableAndSetAside }
+      : null;
+
+  function confirmTurnOff() {
+    if (!enrolment) return;
+    void (setAside ? setAside.run(enrolment) : lock.disableAndErase());
+  }
+
   function turnOffLock() {
     // A gate-only lock never encrypted anything — nothing to warn about.
     if (!enrolment?.encryptionSupported) {
@@ -197,15 +215,18 @@ export function AppLockGate<
         <div className={overlayClassName}>
           {confirmErase ? (
             <LockScreen
-              title={labels.eraseDataWarningTitle}
-              description={labels.eraseDataWarningDescription}
+              title={setAside?.labels.title ?? labels.eraseDataWarningTitle}
+              description={
+                setAside?.labels.description ??
+                labels.eraseDataWarningDescription
+              }
             >
               <Button
                 variant="outline"
                 className="mt-2 min-h-12.5 px-6 text-base"
-                onClick={() => void lock.disableAndErase()}
+                onClick={confirmTurnOff}
               >
-                {labels.eraseDataConfirm}
+                {setAside?.labels.confirm ?? labels.eraseDataConfirm}
               </Button>
               <Button
                 variant="ghost"

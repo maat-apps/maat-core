@@ -114,6 +114,11 @@ export const appLock = createAppLock({
 - `disable()` (unlocked, key in memory): data is rewritten unencrypted.
   `disableAndErase()` is the escape hatch when the authenticator is gone —
   the data can't be decrypted, so it's erased; the gate warns first.
+  `disableAndSetAside(enrolment)` is the one that loses nothing: the data
+  goes aside, still encrypted, with that enrolment (`data.setAside`;
+  erased when the app has none), and `deriveKeyWith(enrolment)` later
+  prompts for that credential and returns its key — without unlocking or
+  touching the key holder — to open it.
 - Persist the enrolment in the app's settings (`/app-settings` does it,
   parsing it with `parseLockEnrolment` — anything corrupt reads as "no
   lock").
@@ -324,6 +329,13 @@ createAppLock({ /* … */ data: lockData(notesStore, backups.lockPart) });
   moved to `unreadableKeyFor(key)`, or left in place with writes off for
   the session. `getUnreadable()` reports it — tell the user. `erase` is
   the exception: it doesn't wait, and deletes the moved-aside value too.
+  The set-aside key holds a `{ setAside: [{ value, lock, setAsideAt }] }`
+  list (`readSetAsideEntries`; a bare value — 0.8's form — reads as one
+  entry). `setAside(lock)` moves what's stored there with the lock it was
+  encrypted under and starts over empty (the lock's `setAside`);
+  `getSetAsideCount()` says how many wait; `recoverSetAside(keyFor)` opens
+  each with `keyFor(entry.lock)` and returns what opened, for the app to
+  merge.
 - `createLocalBackup`: `create`, `parse` (file text) / `parseValue`,
   `apply`, `download`/`share`, the pre-update `snapshot` and `updateApp`.
   Password-protected files: `encryptedFile` / `exportWithPassword` write
@@ -336,8 +348,8 @@ createAppLock({ /* … */ data: lockData(notesStore, backups.lockPart) });
   app refuse a backup, `afterApply` drops derived caches.
 - `lockData(...parts)`: the app lock's `rewrite` (each part, a failure
   doesn't stop the rest; the previous key is passed on, so the update
-  snapshot is re-encrypted rather than left in its old form) and `erase`
-  (all parts).
+  snapshot is re-encrypted rather than left in its old form), `erase` (all
+  parts) and `setAside` (each part that has one; the rest are erased).
 
 ## `github`
 
