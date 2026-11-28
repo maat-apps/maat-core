@@ -23,6 +23,31 @@ function useDrawer() {
 
 let drawerHistoryCounter = 0;
 
+// A closing drawer's `history.back()` lands later, as a `popstate`. A drawer
+// opened meanwhile (one sheet handing over to the next) must push its entry
+// only after that, or the late back pops the new entry and closes it.
+let pendingBack: Promise<void> | null = null;
+// A browser (or test) that never fires the popstate mustn't hold drawers up.
+const PENDING_BACK_TIMEOUT_MS = 500;
+
+function goBack(): void {
+  const settled = new Promise<void>((resolve) => {
+    let timer = 0;
+    function done() {
+      window.removeEventListener("popstate", done);
+      window.clearTimeout(timer);
+      resolve();
+    }
+    window.addEventListener("popstate", done);
+    timer = window.setTimeout(done, PENDING_BACK_TIMEOUT_MS);
+  });
+  pendingBack = settled;
+  void settled.then(() => {
+    if (pendingBack === settled) pendingBack = null;
+  });
+  window.history.back();
+}
+
 /**
  * Closes an open, controlled drawer the same way its swipe handle/close
  * button do when the platform's native back control fires.
@@ -56,10 +81,8 @@ function useHistoryBackDismiss(
 
     const marker = ++drawerHistoryCounter;
     let consumed = false;
-    window.history.pushState(
-      { ...window.history.state, drawerMarker: marker },
-      "",
-    );
+    let pushed = false;
+    let closed = false;
 
     function handlePopState(event: PopStateEvent) {
       if (!consumed && event.state?.drawerMarker !== marker) {
@@ -68,8 +91,22 @@ function useHistoryBackDismiss(
       }
     }
 
-    window.addEventListener("popstate", handlePopState);
+    function push() {
+      if (closed) return;
+      window.history.pushState(
+        { ...window.history.state, drawerMarker: marker },
+        "",
+      );
+      window.addEventListener("popstate", handlePopState);
+      pushed = true;
+    }
+
+    if (pendingBack) void pendingBack.then(push);
+    else push();
+
     return () => {
+      closed = true;
+      if (!pushed) return;
       window.removeEventListener("popstate", handlePopState);
       if (!consumed) {
         consumed = true;
@@ -77,7 +114,7 @@ function useHistoryBackDismiss(
           drawerMarker?: number;
         } | null;
         if (current?.drawerMarker === marker) {
-          window.history.back();
+          goBack();
         }
       }
     };

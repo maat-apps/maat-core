@@ -37,3 +37,48 @@ it("closes on a downward touch swipe", async () => {
 
   await expect.element(dialog).not.toBeInTheDocument();
 });
+
+function HandOver() {
+  const [step, setStep] = useState<"first" | "next" | "none">("first");
+  return (
+    <>
+      <Drawer
+        open={step === "first"}
+        onOpenChange={(open) => !open && setStep("none")}
+      >
+        <DrawerContent>
+          <DrawerTitle>First</DrawerTitle>
+          <button type="button" onClick={() => setStep("next")}>
+            Continue
+          </button>
+        </DrawerContent>
+      </Drawer>
+      <Drawer
+        open={step === "next"}
+        onOpenChange={(open) => !open && setStep("none")}
+      >
+        <DrawerContent>
+          <DrawerTitle>Next</DrawerTitle>
+        </DrawerContent>
+      </Drawer>
+    </>
+  );
+}
+
+it("keeps a drawer that takes over from a closing one open", async () => {
+  render(<HandOver />);
+  const lengthBefore = window.history.length;
+
+  await page.getByRole("button", { name: "Continue" }).click();
+  // Long enough for the first drawer's history.back() to land.
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  await expect
+    .element(page.getByRole("dialog", { name: "Next" }))
+    .toBeVisible();
+  // The first drawer's entry is gone and the next one's is on top.
+  expect(window.history.length).toBe(lengthBefore);
+  expect(window.history.state).toMatchObject({
+    drawerMarker: expect.any(Number),
+  });
+});

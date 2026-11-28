@@ -39,6 +39,33 @@ describe("Drawer's native-back dismissal", () => {
     // jsdom's back() navigates asynchronously; the hook's own contract is
     // only *whether* it calls back(), so stub it.
     back = vi.spyOn(window.history, "back").mockImplementation(() => {});
+    // A browser fires popstate once a back() lands; with back() stubbed, an
+    // earlier test's pending one is settled here instead.
+    window.dispatchEvent(new PopStateEvent("popstate", { state: null }));
+  });
+
+  it("waits for a closing drawer's back() before pushing its own entry", async () => {
+    const onNextChange = vi.fn();
+    const { rerender } = render(<TestDrawer open title="First" />);
+    const lengthBefore = window.history.length;
+
+    // One sheet hands over to the next in the same render.
+    rerender(
+      <>
+        <TestDrawer open={false} title="First" />
+        <TestDrawer open title="Next" onOpenChange={onNextChange} />
+      </>,
+    );
+    expect(back).toHaveBeenCalledTimes(1);
+    expect(window.history.length).toBe(lengthBefore);
+
+    // The first drawer's back() lands.
+    firePopState(null);
+    await act(() => Promise.resolve());
+
+    expect(window.history.length).toBe(lengthBefore + 1);
+    expect(currentMarker()).toEqual(expect.any(Number));
+    expect(onNextChange).not.toHaveBeenCalled();
   });
 
   it("pushes a marked history entry when opened", () => {
