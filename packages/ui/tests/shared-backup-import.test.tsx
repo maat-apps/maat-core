@@ -6,6 +6,7 @@ import {
   SharedBackupImport,
   type SharedBackupImportLabels,
 } from "../src/shared-backup-import";
+import { passwordLabels } from "./password-labels";
 
 const labels: SharedBackupImportLabels = {
   importTitle: "Add from the backup?",
@@ -21,6 +22,15 @@ const parse = (text: string) => {
   return { parsed: text };
 };
 
+const passwords = {
+  isEncrypted: (text: string) => text.startsWith("locked:"),
+  parseWithPassword: async (text: string, password: string) => {
+    if (password !== "right password") throw new Error("no");
+    return { parsed: text };
+  },
+  labels: passwordLabels,
+};
+
 function setup(path: string, shared: string | null) {
   const take = vi.fn(() => Promise.resolve(shared));
   const onImport = vi.fn();
@@ -32,6 +42,7 @@ function setup(path: string, shared: string | null) {
           <SharedBackupImport
             take={take}
             parse={parse}
+            passwords={passwords}
             onImport={onImport}
             labels={labels}
           />
@@ -65,6 +76,19 @@ describe("SharedBackupImport", () => {
 
     expect(await screen.findByText("That file isn't a backup.")).toBeTruthy();
     expect(onImport).not.toHaveBeenCalled();
+  });
+
+  it("asks for a protected file's password before confirming", async () => {
+    vi.spyOn(window.history, "back").mockImplementation(() => {});
+    const { onImport } = setup("/?shared-backup", "locked:backup");
+
+    fireEvent.change(await screen.findByLabelText("Password"), {
+      target: { value: "right password" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Open" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Import" }));
+
+    expect(onImport).toHaveBeenCalledWith({ parsed: "locked:backup" });
   });
 
   it("asks nothing when no file was parked", async () => {

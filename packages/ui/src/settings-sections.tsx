@@ -6,6 +6,10 @@ import {
   useSyncExternalStore,
 } from "react";
 
+import {
+  BackupPasswordDrawer,
+  type BackupPasswords,
+} from "./backup-password-drawer";
 import { Button } from "./button";
 import { ConfirmDrawer } from "./confirm-drawer";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "./drawer";
@@ -447,17 +451,30 @@ export type DataSectionLabels = {
 };
 
 /**
+ * With these, Export asks for a password and saves a file only it opens,
+ * and Import asks for the password of such a file (plain ones still import).
+ */
+export type DataSectionPasswords<Backup> = BackupPasswords<Backup> & {
+  /** core's `exportWithPassword`: shares the protected file, else downloads it. */
+  exportWithPassword: (
+    password: string,
+  ) => Promise<"shared" | "cancelled" | "downloaded">;
+};
+
+/**
  * Export a backup (share sheet, else a download) and import one, after a
  * confirmation. `children` are the app's own rows, after these.
  */
 export function DataSection<Backup>({
   backups,
+  passwords,
   onImport,
   onStatus,
   labels,
   children,
 }: {
   backups: DataSectionBackups<Backup>;
+  passwords?: DataSectionPasswords<Backup>;
   /** Called once the user confirms — an app merges, it doesn't replace. */
   onImport: (backup: Backup) => void;
   onStatus: OnStatus;
@@ -468,9 +485,36 @@ export function DataSection<Backup>({
   const [pendingImport, setPendingImport] = useState<{
     backup: Backup;
   } | null>(null);
+  const [choosingPassword, setChoosingPassword] = useState(false);
+  // A protected file waiting for its password.
+  const [lockedFile, setLockedFile] = useState<string | null>(null);
+
+  async function exportWithPassword(password: string): Promise<boolean> {
+    if (!passwords) return false;
+    const result = await passwords.exportWithPassword(password);
+    if (result === "shared") onStatus(labels.exportShared);
+    if (result === "downloaded") onStatus(labels.exportDone);
+    return true;
+  }
+
+  async function openLockedFile(password: string): Promise<boolean> {
+    if (!passwords || lockedFile === null) return false;
+    try {
+      const backup = await passwords.parseWithPassword(lockedFile, password);
+      setLockedFile(null);
+      setPendingImport({ backup });
+      return true;
+    } catch {
+      return false;
+    }
+  }
 
   async function exportBackup() {
     onStatus(null);
+    if (passwords) {
+      setChoosingPassword(true);
+      return;
+    }
     const result = await backups.share();
     if (result === "shared") {
       onStatus(labels.exportShared);
@@ -485,7 +529,12 @@ export function DataSection<Backup>({
     if (!file) return;
     onStatus(null);
     try {
-      setPendingImport({ backup: backups.parse(await file.text()) });
+      const text = await file.text();
+      if (passwords?.isEncrypted(text)) {
+        setLockedFile(text);
+        return;
+      }
+      setPendingImport({ backup: backups.parse(text) });
     } catch {
       onStatus(labels.importFailed);
     }
@@ -550,6 +599,24 @@ export function DataSection<Backup>({
         confirmLabel={labels.importConfirm}
         onConfirm={confirmImport}
       />
+      {passwords && (
+        <>
+          <BackupPasswordDrawer
+            mode="choose"
+            open={choosingPassword}
+            onOpenChange={setChoosingPassword}
+            labels={passwords.labels}
+            onSubmit={exportWithPassword}
+          />
+          <BackupPasswordDrawer
+            mode="enter"
+            open={lockedFile !== null}
+            onOpenChange={(open) => !open && setLockedFile(null)}
+            labels={passwords.labels}
+            onSubmit={openLockedFile}
+          />
+        </>
+      )}
     </>
   );
 }

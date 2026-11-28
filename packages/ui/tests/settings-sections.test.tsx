@@ -11,6 +11,7 @@ import {
   SecuritySection,
   type SecuritySectionLabels,
 } from "../src/settings-sections";
+import { passwordLabels } from "./password-labels";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -320,6 +321,97 @@ describe("DataSection", () => {
 
     await waitFor(() => expect(onStatus).toHaveBeenCalledWith("Not a backup."));
     expect(onImport).not.toHaveBeenCalled();
+  });
+
+  describe("with passwords", () => {
+    function renderProtected(
+      passwords: Partial<
+        NonNullable<Parameters<typeof DataSection<string>>[0]["passwords"]>
+      > = {},
+    ) {
+      vi.spyOn(window.history, "back").mockImplementation(() => {});
+      const onImport = vi.fn();
+      const onStatus = vi.fn();
+      const share = vi.fn(() => Promise.resolve("shared" as const));
+      render(
+        <DataSection
+          backups={{ share, download: vi.fn(), parse: (text) => text }}
+          passwords={{
+            exportWithPassword: () => Promise.resolve("downloaded"),
+            isEncrypted: (text) => text.startsWith("locked:"),
+            parseWithPassword: async (text, password) => {
+              if (password !== "right password") throw new Error("no");
+              return `opened:${text}`;
+            },
+            labels: passwordLabels,
+            ...passwords,
+          }}
+          onImport={onImport}
+          onStatus={onStatus}
+          labels={dataLabels}
+        />,
+      );
+      return { onImport, onStatus, share };
+    }
+
+    function type(label: string, value: string) {
+      fireEvent.change(screen.getByLabelText(label), { target: { value } });
+    }
+
+    it("asks for a password, then exports only with it", async () => {
+      const exportWithPassword = vi.fn(() =>
+        Promise.resolve("downloaded" as const),
+      );
+      const { onStatus, share } = renderProtected({ exportWithPassword });
+
+      fireEvent.click(screen.getByRole("button", { name: "Save" }));
+      type("Password", "right password");
+      type("Repeat password", "right password");
+      fireEvent.click(screen.getByRole("button", { name: "Save backup" }));
+
+      await waitFor(() =>
+        expect(onStatus).toHaveBeenCalledWith("Backup downloaded."),
+      );
+      expect(exportWithPassword).toHaveBeenCalledWith("right password");
+      expect(share).not.toHaveBeenCalled();
+    });
+
+    it("opens a protected file with its password, then confirms", async () => {
+      const { onImport } = renderProtected();
+
+      chooseFile("locked:data");
+      await screen.findByLabelText("Password");
+      type("Password", "right password");
+      fireEvent.click(screen.getByRole("button", { name: "Open" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Import" }));
+
+      await waitFor(() =>
+        expect(onImport).toHaveBeenCalledWith("opened:locked:data"),
+      );
+    });
+
+    it("keeps asking when the password is wrong", async () => {
+      const { onImport } = renderProtected();
+
+      chooseFile("locked:data");
+      await screen.findByLabelText("Password");
+      type("Password", "wrong");
+      fireEvent.click(await screen.findByRole("button", { name: "Open" }));
+
+      expect(
+        await screen.findByText("Wrong password, or the file is damaged."),
+      ).toBeTruthy();
+      expect(onImport).not.toHaveBeenCalled();
+    });
+
+    it("still imports a plain backup without asking", async () => {
+      const { onImport } = renderProtected();
+
+      chooseFile("plain");
+      fireEvent.click(await screen.findByRole("button", { name: "Import" }));
+
+      await waitFor(() => expect(onImport).toHaveBeenCalledWith("plain"));
+    });
   });
 
   it("keeps the app's own rows in the section", () => {

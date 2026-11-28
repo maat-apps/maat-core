@@ -67,7 +67,13 @@ const back = await decryptJson<typeof data>(key, blob);
   has encrypted data**, or that data can't be decrypted any more. routines
   uses `"routines-data-v1"`.
 - `encryptJson` uses a fresh random IV per call; `isEncryptedBlob` tells an
-  encrypted value from plain data.
+  encrypted value from plain data. An optional `additionalData` string binds
+  the ciphertext to it (decrypting needs the same one).
+- `encryptJsonWithPassword` / `decryptJsonWithPassword`: the same under a key
+  from a password — PBKDF2-SHA256, `PASSWORD_ITERATIONS` (600 000), a fresh
+  16-byte salt, the password NFC-normalised. The blob names its own salt and
+  count (`isPasswordEncryptedBlob`); a count outside 100 000–10 000 000 is
+  refused, so a crafted file can't freeze the app.
 - `randomBytes`, `toBase64Url`, `fromBase64Url`: the helpers a WebAuthn
   enrol/verify ceremony needs (challenges, storing credential ids).
 
@@ -320,6 +326,12 @@ createAppLock({ /* … */ data: lockData(notesStore, backups.lockPart) });
   the exception: it doesn't wait, and deletes the moved-aside value too.
 - `createLocalBackup`: `create`, `parse` (file text) / `parseValue`,
   `apply`, `download`/`share`, the pre-update `snapshot` and `updateApp`.
+  Password-protected files: `encryptedFile` / `exportWithPassword` write
+  `{ app, version, exportedAt, encrypted }` — only the envelope is readable,
+  the ciphertext is bound to `<app>-backup`; `isEncrypted` spots one,
+  `parseWithPassword` opens it (`messages.wrongPassword`) and still parses a
+  plain file. Plain `parse` refuses a protected file
+  (`messages.passwordRequired`) rather than reading it as empty.
   `extras` adds fields next to `data` (e.g. a locale), `parseData` lets the
   app refuse a backup, `afterApply` drops derived caches.
 - `lockData(...parts)`: the app lock's `rewrite` (each part, a failure
