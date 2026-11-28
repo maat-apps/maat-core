@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 
 import {
@@ -58,6 +58,12 @@ export function SharedBackupImport<Backup>({
   const [failed, setFailed] = useState(false);
   // A protected file waiting for its password.
   const [lockedFile, setLockedFile] = useState<string | null>(null);
+  // Read when the file arrives: an app's `passwords` is a new object on
+  // every render, so as an effect dependency it would re-run the take.
+  const latestPasswords = useRef(passwords);
+  useEffect(() => {
+    latestPasswords.current = passwords;
+  });
 
   useEffect(() => {
     if (!shared) return;
@@ -65,7 +71,7 @@ export function SharedBackupImport<Backup>({
     setSearchParams({}, { replace: true });
     void take().then((text) => {
       if (text === null) return;
-      if (passwords?.isEncrypted(text)) {
+      if (latestPasswords.current?.isEncrypted(text)) {
         setLockedFile(text);
         return;
       }
@@ -75,7 +81,7 @@ export function SharedBackupImport<Backup>({
         setFailed(true);
       }
     });
-  }, [shared, setSearchParams, take, parse, passwords]);
+  }, [shared, setSearchParams, take, parse]);
 
   async function openLockedFile(password: string): Promise<boolean> {
     if (!passwords || lockedFile === null) return false;
