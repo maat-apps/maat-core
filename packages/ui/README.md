@@ -85,7 +85,8 @@ everything from one barrel for convenience.
   snapshot) and `DataSection` (backup export/import with a confirmation;
   `children` add the app's own rows; with `passwords` — core's backup kit
   methods plus labels — Export asks for a new password and Import asks
-  for a protected file's). Typed structurally against
+  for a protected file's; `onExported` fires once a backup was shared or
+  downloaded, e.g. to remember when the last one was made). Typed structurally against
   `@maat-apps/core`; every string is a `labels` entry from the app.
 - `drawer.tsx` — the Base UI `Drawer` wrapper. With `showSwipeHandle` it
   shows a grab pill and can be swiped down to dismiss; nested drawers stack
@@ -134,7 +135,9 @@ everything from one barrel for convenience.
   every app: a large fingerprint) that opens the platform prompt by itself on each arrival and
   on tap, where the browser needs one. A relock covers the app instead of
   unmounting it. When the device lets the user down, it adds the "turn off
-  the lock" escape hatch (with an erase warning when the lock encrypts). Takes `@maat-apps/core/lock`'s
+  the lock" escape hatch (with an erase warning when the lock encrypts —
+  or, given `labels.setAside` and the lock's `disableAndSetAside`, a
+  warning that the data is put away for that credential instead). Takes `@maat-apps/core/lock`'s
   `AppLock`, the stored enrolment, a `ready` flag (settings loaded) and the
   app's translated `labels`.
 - `backup-password-drawer.tsx` — `BackupPasswordDrawer`, the bottom sheet

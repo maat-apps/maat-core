@@ -56,13 +56,14 @@ function renderGate(
   lock: AppLockGateLock<Enrolment>,
   enrolment: Enrolment | null,
   ready = true,
+  gateLabels = labels,
 ) {
   return render(
     <AppLockGate
       lock={lock}
       enrolment={enrolment}
       ready={ready}
-      labels={labels}
+      labels={gateLabels}
     >
       <p>App content</p>
     </AppLockGate>,
@@ -232,6 +233,63 @@ describe("AppLockGate", () => {
 
     expect(lock.disableAndErase).toHaveBeenCalled();
     expect(screen.getByText("App content")).toBeTruthy();
+  });
+
+  describe("when the app can set its data aside", () => {
+    const setAsideLabels: AppLockGateLabels = {
+      ...labels,
+      setAside: {
+        title: "Your notes will be put away",
+        description: "This fingerprint can open them again later.",
+        confirm: "Put away and continue",
+      },
+    };
+
+    async function turnOff(
+      lock: AppLockGateLock<Enrolment>,
+      gateLabels = setAsideLabels,
+    ) {
+      const enrolment = { encryptionSupported: true };
+      renderGate(lock, enrolment, true, gateLabels);
+      fireEvent.click(unlockButton());
+      fireEvent.click(
+        await screen.findByRole("button", { name: "Turn off the lock" }),
+      );
+      return enrolment;
+    }
+
+    it("sets the data aside with the enrolment instead of erasing it", async () => {
+      const disableAndSetAside = vi.fn(async () => undefined);
+      const lock = fakeLock({ verify: failingVerify(), disableAndSetAside });
+      const enrolment = await turnOff(lock);
+
+      expect(
+        screen.getByRole("heading", { name: "Your notes will be put away" }),
+      ).toBeTruthy();
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole("button", { name: "Put away and continue" }),
+        );
+      });
+
+      expect(disableAndSetAside).toHaveBeenCalledWith(enrolment);
+      expect(lock.disableAndErase).not.toHaveBeenCalled();
+    });
+
+    it("still warns about erasing without the set-aside labels", async () => {
+      const disableAndSetAside = vi.fn(async () => undefined);
+      const lock = fakeLock({ verify: failingVerify(), disableAndSetAside });
+      await turnOff(lock, labels);
+
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole("button", { name: "Erase and continue" }),
+        );
+      });
+
+      expect(lock.disableAndErase).toHaveBeenCalled();
+      expect(disableAndSetAside).not.toHaveBeenCalled();
+    });
   });
 
   it("goes back to the lock screen when erasing is cancelled", async () => {

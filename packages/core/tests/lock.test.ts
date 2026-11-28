@@ -342,6 +342,100 @@ describe("disableAndErase", () => {
   });
 });
 
+describe("disableAndSetAside", () => {
+  async function enrolledWithPrf() {
+    stubCredentials({
+      create: () => Promise.resolve(fakeCredential({ prf: { enabled: true } })),
+      get: () => Promise.resolve(withPrfSecret()),
+    });
+    const keyHolder = createKeyHolder();
+    let stored: LockEnrolment | null = null;
+    const data = { rewrite: vi.fn(), erase: vi.fn(), setAside: vi.fn() };
+    const lock = createAppLock({
+      name: "Test",
+      keyInfo: "test-data-v1",
+      keyHolder,
+      saveEnrolment: (next) => {
+        stored = next;
+      },
+      data,
+    });
+    const enrolment = await lock.enrol();
+    return { lock, keyHolder, data, enrolment, getStored: () => stored };
+  }
+
+  it("sets the data aside with the enrolment instead of erasing it", async () => {
+    const { lock, keyHolder, data, enrolment, getStored } =
+      await enrolledWithPrf();
+
+    await lock.disableAndSetAside(enrolment);
+
+    expect(data.setAside).toHaveBeenCalledWith(enrolment);
+    expect(data.erase).not.toHaveBeenCalled();
+    expect(getStored()).toBeNull();
+    expect(keyHolder.get()).toBeNull();
+    expect(lock.isSessionUnlocked()).toBe(true);
+  });
+
+  it("erases when the app can't set its data aside", async () => {
+    const { lock, data, getStored } = setup();
+    const enrolment = parseLockEnrolment({ credentialId: "c", userId: "u" })!;
+
+    await lock.disableAndSetAside(enrolment);
+
+    expect(data.erase).toHaveBeenCalledTimes(1);
+    expect(getStored()).toBeNull();
+  });
+});
+
+describe("deriveKeyWith", () => {
+  async function enrolWithPrf() {
+    stubCredentials({
+      create: () => Promise.resolve(fakeCredential({ prf: { enabled: true } })),
+      get: () => Promise.resolve(withPrfSecret()),
+    });
+    const enrolled = setup();
+    const enrolment = await enrolled.lock.enrol();
+    const encrypted = await encryptJson(enrolled.keyHolder.get()!, {
+      secret: 1,
+    });
+    return { enrolment, encrypted };
+  }
+
+  it("derives the enrolment's key without unlocking or setting it", async () => {
+    const { enrolment, encrypted } = await enrolWithPrf();
+    const { lock, keyHolder } = setup();
+
+    const key = await lock.deriveKeyWith(enrolment);
+
+    await expect(decryptJson(key!, encrypted)).resolves.toEqual({ secret: 1 });
+    expect(keyHolder.get()).toBeNull();
+    expect(lock.isSessionUnlocked()).toBe(false);
+  });
+
+  it("gives no key when the prompt is cancelled", async () => {
+    const { enrolment } = await enrolWithPrf();
+    stubCredentials({ get: () => Promise.resolve(null) });
+
+    await expect(setup().lock.deriveKeyWith(enrolment)).resolves.toBeNull();
+  });
+
+  it("gives no key when the platform throws", async () => {
+    const { enrolment } = await enrolWithPrf();
+    stubCredentials({ get: () => Promise.reject(new Error("gone")) });
+
+    await expect(setup().lock.deriveKeyWith(enrolment)).resolves.toBeNull();
+  });
+
+  it("doesn't prompt for an enrolment that never encrypted", async () => {
+    const credentials = stubCredentials({});
+    const gateOnly = parseLockEnrolment({ credentialId: "c", userId: "u" })!;
+
+    await expect(setup().lock.deriveKeyWith(gateOnly)).resolves.toBeNull();
+    expect(credentials.get).not.toHaveBeenCalled();
+  });
+});
+
 describe("relock", () => {
   /** A stand-in document whose visibility the test flips. */
   function stubDocument() {

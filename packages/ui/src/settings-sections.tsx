@@ -469,6 +469,7 @@ export function DataSection<Backup>({
   backups,
   passwords,
   onImport,
+  onExported,
   onStatus,
   labels,
   children,
@@ -477,6 +478,8 @@ export function DataSection<Backup>({
   passwords?: DataSectionPasswords<Backup>;
   /** Called once the user confirms — an app merges, it doesn't replace. */
   onImport: (backup: Backup) => void;
+  /** Called once a backup was shared or downloaded (not when cancelled). */
+  onExported?: () => void;
   onStatus: OnStatus;
   labels: DataSectionLabels;
   children?: ReactNode;
@@ -494,6 +497,7 @@ export function DataSection<Backup>({
     const result = await passwords.exportWithPassword(password);
     if (result === "shared") onStatus(labels.exportShared);
     if (result === "downloaded") onStatus(labels.exportDone);
+    if (result !== "cancelled") onExported?.();
     return true;
   }
 
@@ -522,6 +526,7 @@ export function DataSection<Backup>({
       backups.download();
       onStatus(labels.exportDone);
     }
+    if (result !== "cancelled") onExported?.();
     // "cancelled" — the user dismissed the share sheet; nothing to report.
   }
 

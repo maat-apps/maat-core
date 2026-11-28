@@ -257,17 +257,19 @@ describe("DataSection", () => {
   ) {
     const onImport = vi.fn();
     const onStatus = vi.fn();
+    const onExported = vi.fn();
     render(
       <DataSection
         backups={backups}
         onImport={onImport}
+        onExported={onExported}
         onStatus={onStatus}
         labels={dataLabels}
       >
         <p>Own row</p>
       </DataSection>,
     );
-    return { onImport, onStatus };
+    return { onImport, onStatus, onExported };
   }
 
   function chooseFile(text: string) {
@@ -278,7 +280,7 @@ describe("DataSection", () => {
 
   it("downloads the backup where there's no share sheet", async () => {
     const download = vi.fn();
-    const { onStatus } = renderData({
+    const { onStatus, onExported } = renderData({
       share: () => Promise.resolve("unavailable"),
       download,
       parse: (text) => text,
@@ -290,6 +292,7 @@ describe("DataSection", () => {
       expect(onStatus).toHaveBeenCalledWith("Backup downloaded."),
     );
     expect(download).toHaveBeenCalled();
+    expect(onExported).toHaveBeenCalledTimes(1);
   });
 
   it("imports a backup once confirmed", async () => {
@@ -332,10 +335,12 @@ describe("DataSection", () => {
       vi.spyOn(window.history, "back").mockImplementation(() => {});
       const onImport = vi.fn();
       const onStatus = vi.fn();
+      const onExported = vi.fn();
       const share = vi.fn(() => Promise.resolve("shared" as const));
       render(
         <DataSection
           backups={{ share, download: vi.fn(), parse: (text) => text }}
+          onExported={onExported}
           passwords={{
             exportWithPassword: () => Promise.resolve("downloaded"),
             isEncrypted: (text) => text.startsWith("locked:"),
@@ -351,7 +356,7 @@ describe("DataSection", () => {
           labels={dataLabels}
         />,
       );
-      return { onImport, onStatus, share };
+      return { onImport, onStatus, onExported, share };
     }
 
     function type(label: string, value: string) {
@@ -362,7 +367,9 @@ describe("DataSection", () => {
       const exportWithPassword = vi.fn(() =>
         Promise.resolve("downloaded" as const),
       );
-      const { onStatus, share } = renderProtected({ exportWithPassword });
+      const { onStatus, onExported, share } = renderProtected({
+        exportWithPassword,
+      });
 
       fireEvent.click(screen.getByRole("button", { name: "Save" }));
       type("Password", "right password");
@@ -374,6 +381,23 @@ describe("DataSection", () => {
       );
       expect(exportWithPassword).toHaveBeenCalledWith("right password");
       expect(share).not.toHaveBeenCalled();
+      expect(onExported).toHaveBeenCalledTimes(1);
+    });
+
+    it("doesn't count a cancelled share as a backup", async () => {
+      const { onExported } = renderProtected({
+        exportWithPassword: () => Promise.resolve("cancelled"),
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: "Save" }));
+      type("Password", "right password");
+      type("Repeat password", "right password");
+      fireEvent.click(screen.getByRole("button", { name: "Save backup" }));
+
+      await waitFor(() =>
+        expect(screen.queryByLabelText("Repeat password")).toBeNull(),
+      );
+      expect(onExported).not.toHaveBeenCalled();
     });
 
     it("opens a protected file with its password, then confirms", async () => {

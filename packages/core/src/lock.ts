@@ -123,6 +123,12 @@ export type AppLockOptions = {
      * snapshot). Only called when the key is gone for good.
      */
     erase: () => void | Promise<void>;
+    /**
+     * Moves the data aside with `lock` instead of erasing it, so that
+     * credential can open it again later (`deriveKeyWith`). Optional:
+     * `disableAndSetAside` erases without it.
+     */
+    setAside?: (lock: LockEnrolment) => void | Promise<void>;
   };
   /**
    * How long the app may sit in the background before the lock comes back
@@ -157,6 +163,19 @@ export type AppLock = {
    * user first — this doesn't ask.
    */
   disableAndErase: () => Promise<void>;
+  /**
+   * The escape hatch that loses nothing: clears the enrolment and moves the
+   * still-encrypted data aside with it, so the same credential can open it
+   * later if it comes back. The app starts over empty.
+   */
+  disableAndSetAside: (enrolment: LockEnrolment) => Promise<void>;
+  /**
+   * Prompts for `enrolment`'s credential and returns the key it derives,
+   * without unlocking the session or setting the key holder — to open data
+   * set aside under an earlier lock. `null` when cancelled, failed, or the
+   * enrolment never encrypted.
+   */
+  deriveKeyWith: (enrolment: LockEnrolment) => Promise<CryptoKey | null>;
   /** Whether this session has passed the lock (memory only). */
   isSessionUnlocked: () => boolean;
   /** Notified whenever the session is unlocked or locked again. */
@@ -363,12 +382,47 @@ export function createAppLock(options: AppLockOptions): AppLock {
     }
   }
 
+  async function deriveKeyWithPrompt(
+    enrolment: LockEnrolment,
+  ): Promise<CryptoKey | null> {
+    if (!enrolment.encryptionSupported || !enrolment.prfSalt) return null;
+    try {
+      const salt = fromBase64Url(enrolment.prfSalt);
+      const assertion = (await navigator.credentials.get({
+        publicKey: {
+          challenge: randomBytes(32),
+          allowCredentials: [
+            { type: "public-key", id: fromBase64Url(enrolment.credentialId) },
+          ],
+          userVerification: "required",
+          timeout: PROMPT_TIMEOUT_MS,
+          extensions: { prf: { eval: { first: salt } } },
+        },
+      })) as PublicKeyCredential | null;
+      const prfResult =
+        assertion?.getClientExtensionResults().prf?.results?.first;
+      return prfResult ? await deriveKey(prfResult, salt, keyInfo) : null;
+    } catch {
+      return null;
+    }
+  }
+
   function disable(): void {
     saveEnrolment(null);
     const previousKey = keyHolder.get();
     keyHolder.set(null);
     data.rewrite(previousKey);
     setSessionUnlocked(true);
+  }
+
+  async function disableAndSetAside(enrolment: LockEnrolment): Promise<void> {
+    saveEnrolment(null);
+    keyHolder.set(null);
+    try {
+      await (data.setAside ? data.setAside(enrolment) : data.erase());
+    } finally {
+      setSessionUnlocked(true);
+    }
   }
 
   async function disableAndErase(): Promise<void> {
@@ -387,6 +441,9 @@ export function createAppLock(options: AppLockOptions): AppLock {
     verify,
     disable,
     disableAndErase,
+    disableAndSetAside,
+    deriveKeyWith: (enrolment) =>
+      withPrompt(() => deriveKeyWithPrompt(enrolment)),
     isSessionUnlocked: () => sessionUnlocked,
     relock,
     subscribeToUnlock(listener) {

@@ -19,7 +19,7 @@ import {
   isEncryptedBlob,
   isPasswordEncryptedBlob,
 } from "./crypto";
-import type { KeyHolder } from "./lock";
+import type { KeyHolder, LockEnrolment } from "./lock";
 import type { KeyValueStore } from "./storage";
 import { type UpdateSnapshot, createUpdateSnapshot, updateApp } from "./update";
 
@@ -35,6 +35,13 @@ export { BackupError } from "./backup";
 
 /** What the app lock needs from each piece of stored data. */
 export type LockDataPart = {
+  /**
+   * Moves the data aside, still in its stored (encrypted) form, with the
+   * lock it was encrypted under, and starts over empty — instead of erasing
+   * it when the lock is turned off without its key. Parts without this are
+   * erased.
+   */
+  setAside?: (lock: LockEnrolment | null) => void | Promise<void>;
   /**
    * Writes the data back under the key holder's current key (or none).
    * `previousKey` is the key it was under until now, for data that isn't
@@ -69,6 +76,49 @@ export type UnreadableStoredValue = {
 /** Where a store moves a stored value it can't read, rather than lose it. */
 export function unreadableKeyFor(key: string): string {
   return `${key}-unreadable`;
+}
+
+/** One value a store moved aside, with what may open it again. */
+export type SetAsideEntry = {
+  /** As it was stored — still encrypted, if it was. */
+  value: unknown;
+  /** The lock it was encrypted under, when known. */
+  lock: LockEnrolment | null;
+  setAsideAt: string | null;
+};
+
+function isSetAsideList(value: unknown): value is { setAside: unknown[] } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    Array.isArray((value as { setAside?: unknown }).setAside)
+  );
+}
+
+function toEntry(value: unknown): SetAsideEntry | null {
+  if (typeof value !== "object" || value === null) return null;
+  const entry = value as Partial<SetAsideEntry>;
+  if (!("value" in entry) || entry.value == null) return null;
+  return {
+    value: entry.value,
+    lock: (entry.lock as LockEnrolment | null | undefined) ?? null,
+    setAsideAt: typeof entry.setAsideAt === "string" ? entry.setAsideAt : null,
+  };
+}
+
+/**
+ * The entries stored under `unreadableKeyFor`: a `{ setAside: [...] }`
+ * list, or — as the first version wrote it — the bare value on its own.
+ */
+export function readSetAsideEntries(stored: unknown): SetAsideEntry[] {
+  if (stored == null) return [];
+  if (!isSetAsideList(stored)) {
+    return [{ value: stored, lock: null, setAsideAt: null }];
+  }
+  return stored.setAside.flatMap((item) => {
+    const entry = toEntry(item);
+    return entry ? [entry] : [];
+  });
 }
 
 export type LocalStoreOptions<T, S = unknown> = {
@@ -122,6 +172,24 @@ export type LocalStore<T, S = unknown> = LockDataPart & {
    * turned off for this session. Tell the user; listeners are notified.
    */
   getUnreadable(): UnreadableStoredValue | null;
+  /**
+   * Moves what's stored aside, untouched, with `lock` (the enrolment it was
+   * encrypted under), and starts over empty — the lock's `setAside`. Doesn't
+   * wait for the first read. If it can't be moved, nothing is written this
+   * session instead (`getUnreadable`).
+   */
+  setAside(lock: LockEnrolment | null): Promise<void>;
+  /** How many values are set aside; known once loaded, listeners notified. */
+  getSetAsideCount(): number;
+  /**
+   * Opens what's set aside: `keyFor` gives the key for an entry's lock
+   * (`null`: the current one), or `null` to skip it. Each entry that opens
+   * and parses is removed and returned, for the app to merge in; the rest
+   * stay set aside.
+   */
+  recoverSetAside(
+    keyFor: (lock: LockEnrolment | null) => Promise<CryptoKey | null>,
+  ): Promise<T[]>;
 };
 
 export function createLocalStore<T, S = T>({
@@ -153,57 +221,92 @@ export function createLocalStore<T, S = T>({
   let unreadable: UnreadableStoredValue | null = null;
   // Set when an unreadable value had to stay where it is.
   let writesBlocked = false;
-  // A first read still running when the data is erased must leave it be.
-  let erased = false;
+  // Set by an erase or a set-aside: a first read still running must then
+  // leave what's stored alone.
+  let firstReadOverruled = false;
+  let setAsideCount = 0;
+  const setAsideKey = unreadableKeyFor(key);
 
   function emitChange(): void {
     for (const listener of listeners) listener();
   }
 
-  /** Moves `stored` aside so a write can't destroy it; else stops writing. */
-  async function setAside(
+  async function storeSetAside(entries: SetAsideEntry[]): Promise<void> {
+    if (entries.length === 0) await storage.delete(setAsideKey);
+    else await storage.set(setAsideKey, { setAside: entries });
+    setAsideCount = entries.length;
+  }
+
+  /**
+   * Adds `stored` to the set-aside list, then deletes it from `key`. False
+   * when it couldn't be added; a value already in the list (moved on an
+   * earlier launch whose delete failed) counts as added.
+   */
+  async function moveAside(
+    stored: unknown,
+    lock: LockEnrolment | null,
+  ): Promise<boolean> {
+    try {
+      const entries = readSetAsideEntries(
+        await storage.get<unknown>(setAsideKey),
+      );
+      const json = JSON.stringify(stored);
+      if (!entries.some((entry) => JSON.stringify(entry.value) === json)) {
+        entries.push({
+          value: stored,
+          lock,
+          setAsideAt: new Date().toISOString(),
+        });
+        await storeSetAside(entries);
+      }
+      setAsideCount = entries.length;
+    } catch {
+      return false;
+    }
+    await storage.delete(key).catch(() => undefined);
+    return true;
+  }
+
+  /** Moves an unreadable `stored` aside so a write can't destroy it. */
+  async function setAsideUnreadable(
     stored: unknown,
     reason: UnreadableReason,
   ): Promise<void> {
-    const target = unreadableKeyFor(key);
-    try {
-      const earlier = await storage.get<unknown>(target);
-      if (erased) return;
-      // The same value moved aside on an earlier launch whose delete failed.
-      const alreadyThere =
-        earlier != null && JSON.stringify(earlier) === JSON.stringify(stored);
-      if (earlier == null || alreadyThere) {
-        if (!alreadyThere) await storage.set(target, stored);
-        unreadable = { reason, movedTo: target };
-        await storage.delete(key).catch(() => undefined);
-        return;
-      }
-    } catch {
-      // Couldn't move it: leave it where it is, below.
-    }
-    writesBlocked = true;
-    unreadable = { reason, movedTo: null };
+    if (firstReadOverruled) return;
+    const moved = await moveAside(stored, null);
+    if (!moved) writesBlocked = true;
+    unreadable = { reason, movedTo: moved ? setAsideKey : null };
   }
 
   async function read(stored: unknown): Promise<void> {
-    if (erased) return;
+    if (firstReadOverruled) return;
     const cryptoKey = encryption?.keyHolder.get() ?? null;
     let raw = stored;
     if (encryption && isEncryptedBlob(stored)) {
-      if (!cryptoKey) return setAside(stored, "no-key");
+      if (!cryptoKey) return setAsideUnreadable(stored, "no-key");
       try {
         raw = await decryptJson<unknown>(cryptoKey, stored);
       } catch {
-        return setAside(stored, "decrypt-failed");
+        return setAsideUnreadable(stored, "decrypt-failed");
       }
     }
     let parsed: T;
     try {
       parsed = parse(raw);
     } catch {
-      return setAside(stored, "invalid");
+      return setAsideUnreadable(stored, "invalid");
     }
     if (!changedBeforeLoad) value = parsed;
+  }
+
+  async function countSetAside(): Promise<void> {
+    try {
+      setAsideCount = readSetAsideEntries(
+        await storage.get<unknown>(setAsideKey),
+      ).length;
+    } catch {
+      // Unknown: nothing is offered for recovery this session.
+    }
   }
 
   async function load(): Promise<void> {
@@ -213,6 +316,7 @@ export function createLocalStore<T, S = T>({
       }
       const stored = await storage.get<unknown>(key);
       if (stored != null) await read(stored);
+      await countSetAside();
     } catch {
       // What's stored is unknown, so nothing may be written over it.
       writesBlocked = true;
@@ -253,18 +357,82 @@ export function createLocalStore<T, S = T>({
     return writes;
   }
 
-  // Deliberate, so it doesn't wait for the first read: with an encrypting
-  // lock whose key is gone for good, that read never comes.
-  async function erase(): Promise<void> {
+  /** Empties the store without waiting for the first read. */
+  function startOver(): void {
     if (!ready) changedBeforeLoad = true;
-    erased = true;
+    firstReadOverruled = true;
     value = empty;
     unreadable = null;
     writesBlocked = false;
+  }
+
+  // Deliberate, so it doesn't wait for the first read: with an encrypting
+  // lock whose key is gone for good, that read never comes.
+  async function erase(): Promise<void> {
+    startOver();
+    setAsideCount = 0;
     releaseWrites();
     emitChange();
     await persist();
-    await storage.delete(unreadableKeyFor(key)).catch(() => undefined);
+    await storage.delete(setAsideKey).catch(() => undefined);
+  }
+
+  // Like erase, the first read isn't waited for; but what's stored is kept.
+  async function setAside(lock: LockEnrolment | null): Promise<void> {
+    startOver();
+    let stored: unknown;
+    try {
+      stored = await storage.get<unknown>(key);
+    } catch {
+      stored = undefined;
+      writesBlocked = true;
+      unreadable = { reason: "storage-error", movedTo: null };
+    }
+    if (stored != null && !(await moveAside(stored, lock))) {
+      writesBlocked = true;
+      unreadable = { reason: "storage-error", movedTo: null };
+    }
+    if (!ready) await countSetAside();
+    releaseWrites();
+    emitChange();
+    await persist();
+  }
+
+  async function openEntry(
+    entry: SetAsideEntry,
+    keyFor: (lock: LockEnrolment | null) => Promise<CryptoKey | null>,
+  ): Promise<T | null> {
+    try {
+      let raw = entry.value;
+      if (isEncryptedBlob(raw)) {
+        const cryptoKey = await keyFor(entry.lock);
+        if (!cryptoKey) return null;
+        raw = await decryptJson<unknown>(cryptoKey, raw);
+      }
+      return parse(raw);
+    } catch {
+      return null;
+    }
+  }
+
+  async function recoverSetAside(
+    keyFor: (lock: LockEnrolment | null) => Promise<CryptoKey | null>,
+  ): Promise<T[]> {
+    const entries = readSetAsideEntries(
+      await storage.get<unknown>(setAsideKey),
+    );
+    const recovered: T[] = [];
+    const left: SetAsideEntry[] = [];
+    for (const entry of entries) {
+      const opened = await openEntry(entry, keyFor);
+      if (opened === null) left.push(entry);
+      else recovered.push(opened);
+    }
+    if (recovered.length > 0) {
+      await storeSetAside(left);
+      emitChange();
+    }
+    return recovered;
   }
 
   function replace(next: T): Promise<void> {
@@ -300,6 +468,12 @@ export function createLocalStore<T, S = T>({
     serialize: (of = value) => serialize(of),
     parse,
     getUnreadable: () => unreadable,
+    setAside,
+    getSetAsideCount() {
+      void whenLoaded();
+      return setAsideCount;
+    },
+    recoverSetAside,
     rewrite: () => persist(),
     erase,
   };
@@ -519,6 +693,7 @@ export function createLocalBackup<T, S>({
 export function lockData(...parts: LockDataPart[]): {
   rewrite: (previousKey?: CryptoKey | null) => void;
   erase: () => Promise<void>;
+  setAside: (lock: LockEnrolment | null) => Promise<void>;
 } {
   return {
     rewrite(previousKey = null) {
@@ -530,6 +705,13 @@ export function lockData(...parts: LockDataPart[]): {
     },
     async erase() {
       await Promise.all(parts.map((part) => part.erase()));
+    },
+    async setAside(lock) {
+      await Promise.all(
+        parts.map((part) =>
+          part.setAside ? part.setAside(lock) : part.erase(),
+        ),
+      );
     },
   };
 }

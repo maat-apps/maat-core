@@ -11,15 +11,23 @@ import {
   createLocalStore,
   type LocalStore,
   lockData,
+  readSetAsideEntries,
   unreadableKeyFor,
 } from "../src/local";
-import { createKeyHolder } from "../src/lock";
+import { createKeyHolder, type LockEnrolment } from "../src/lock";
 import type { KeyValueStore } from "../src/storage";
 import { memoryStorage } from "./memory-storage";
 
 const KEY = "test-data";
 const SNAPSHOT_KEY = "test-snapshot";
 const UNREADABLE_KEY = unreadableKeyFor(KEY);
+
+/** The values set aside under KEY, oldest first. */
+function setAsideValues(data: Map<string, unknown>): unknown[] {
+  return readSetAsideEntries(data.get(UNREADABLE_KEY)).map(
+    (entry) => entry.value,
+  );
+}
 
 type Data = { items: string[] };
 
@@ -241,7 +249,7 @@ describe("createLocalStore with something it can't read", () => {
       reason: "no-key",
       movedTo: UNREADABLE_KEY,
     });
-    expect(data.get(UNREADABLE_KEY)).toEqual(blob);
+    expect(setAsideValues(data)).toEqual([blob]);
     expect(data.has(KEY)).toBe(false);
   });
 
@@ -258,7 +266,7 @@ describe("createLocalStore with something it can't read", () => {
     await store.whenLoaded();
 
     expect(store.getUnreadable()?.reason).toBe("decrypt-failed");
-    expect(data.get(UNREADABLE_KEY)).toEqual(blob);
+    expect(setAsideValues(data)).toEqual([blob]);
   });
 
   it("moves aside a value the app's parse refuses", async () => {
@@ -268,7 +276,7 @@ describe("createLocalStore with something it can't read", () => {
     await store.whenLoaded();
 
     expect(store.getUnreadable()?.reason).toBe("invalid");
-    expect(data.get(UNREADABLE_KEY)).toBe("junk");
+    expect(setAsideValues(data)).toEqual(["junk"]);
   });
 
   it("never overwrites the moved value with new changes", async () => {
@@ -283,7 +291,7 @@ describe("createLocalStore with something it can't read", () => {
     await store.replace(["new"]);
 
     expect(data.get(KEY)).toEqual({ items: ["new"] });
-    expect(data.get(UNREADABLE_KEY)).toEqual(blob);
+    expect(setAsideValues(data)).toEqual([blob]);
   });
 
   it("moves the value aside before a change made during the first read lands", async () => {
@@ -292,11 +300,11 @@ describe("createLocalStore with something it can't read", () => {
 
     await store.replace(["new"]);
 
-    expect(data.get(UNREADABLE_KEY)).toBe("junk");
+    expect(setAsideValues(data)).toEqual(["junk"]);
     expect(data.get(KEY)).toEqual({ items: ["new"] });
   });
 
-  it("leaves it in place and stops writing when it can't be moved", async () => {
+  it("adds it to what an earlier launch set aside", async () => {
     const { storage, data } = memoryStorage({
       [KEY]: "junk",
       [UNREADABLE_KEY]: "moved earlier",
@@ -306,10 +314,12 @@ describe("createLocalStore with something it can't read", () => {
 
     await store.replace(["new"]);
 
-    expect(store.getUnreadable()).toEqual({ reason: "invalid", movedTo: null });
-    expect(store.getSnapshot()).toEqual(["new"]);
-    expect(data.get(KEY)).toBe("junk");
-    expect(data.get(UNREADABLE_KEY)).toBe("moved earlier");
+    expect(store.getUnreadable()).toEqual({
+      reason: "invalid",
+      movedTo: UNREADABLE_KEY,
+    });
+    expect(setAsideValues(data)).toEqual(["moved earlier", "junk"]);
+    expect(data.get(KEY)).toEqual({ items: ["new"] });
   });
 
   it("counts a value already moved on an earlier launch as moved", async () => {
@@ -386,17 +396,132 @@ describe("createLocalStore with something it can't read", () => {
   });
 
   it("lets an erase write again after writes were stopped", async () => {
-    const { storage, data } = memoryStorage({
-      [KEY]: "junk",
-      [UNREADABLE_KEY]: "moved earlier",
-    });
+    const { storage, data } = memoryStorage({ [KEY]: "junk" });
+    vi.spyOn(storage, "set").mockRejectedValueOnce(new Error("full"));
     const store = itemsStore(storage);
     await store.whenLoaded();
+    expect(store.getUnreadable()?.movedTo).toBeNull();
 
     await store.erase();
     await store.replace(["new"]);
 
     expect(data.get(KEY)).toEqual({ items: ["new"] });
+  });
+});
+
+describe("createLocalStore setting its data aside", () => {
+  const oldLock: LockEnrolment = {
+    credentialId: "old-credential",
+    userId: "user",
+    createdAt: "2026-10-01T00:00:00.000Z",
+    encryptionSupported: true,
+    prfSalt: "salt",
+  };
+
+  async function encryptedStore() {
+    const key = await testKey();
+    const blob = await encryptJson(key, { items: ["secret"] });
+    const { storage, data } = memoryStorage({ [KEY]: blob });
+    // An encrypting lock whose key never comes: the fingerprint is gone.
+    const store = itemsStore(storage, {
+      keyHolder: createKeyHolder(),
+      encrypts: async () => true,
+    });
+    void store.whenLoaded();
+    return { key, blob, store, storage, data };
+  }
+
+  it("moves the encrypted data aside with its lock and starts over", async () => {
+    const { blob, store, data } = await encryptedStore();
+
+    await store.setAside(oldLock);
+
+    expect(readSetAsideEntries(data.get(UNREADABLE_KEY))).toEqual([
+      { value: blob, lock: oldLock, setAsideAt: expect.any(String) },
+    ]);
+    expect(data.get(KEY)).toEqual({ items: [] });
+    expect(store.getSnapshot()).toEqual([]);
+    expect(store.getSetAsideCount()).toBe(1);
+  });
+
+  it("keeps saving changes after setting the data aside", async () => {
+    const { blob, store, data } = await encryptedStore();
+    await store.setAside(oldLock);
+
+    await store.replace(["new"]);
+
+    expect(data.get(KEY)).toEqual({ items: ["new"] });
+    expect(setAsideValues(data)).toEqual([blob]);
+  });
+
+  it("stops writing instead when the data can't be moved", async () => {
+    const { blob, store, storage, data } = await encryptedStore();
+    vi.spyOn(storage, "set").mockRejectedValueOnce(new Error("full"));
+
+    await store.setAside(oldLock);
+    await store.replace(["new"]);
+
+    expect(store.getUnreadable()?.movedTo).toBeNull();
+    expect(data.get(KEY)).toEqual(blob);
+  });
+
+  it("counts what an earlier launch set aside once loaded", async () => {
+    const store = itemsStore(
+      memoryStorage({ [UNREADABLE_KEY]: { setAside: [{ value: "a" }] } })
+        .storage,
+    );
+
+    await store.whenLoaded();
+
+    expect(store.getSetAsideCount()).toBe(1);
+  });
+
+  it("recovers set-aside data with the key for its lock", async () => {
+    const { key, store, data } = await encryptedStore();
+    await store.setAside(oldLock);
+    const keyFor = vi.fn(async () => key);
+
+    await expect(store.recoverSetAside(keyFor)).resolves.toEqual([["secret"]]);
+
+    expect(keyFor).toHaveBeenCalledWith(oldLock);
+    expect(data.has(UNREADABLE_KEY)).toBe(false);
+    expect(store.getSetAsideCount()).toBe(0);
+  });
+
+  it("leaves set aside what the key doesn't open, or no key is given for", async () => {
+    const { blob, store, data } = await encryptedStore();
+    await store.setAside(oldLock);
+    const wrongKey = await testKey();
+
+    await expect(store.recoverSetAside(async () => wrongKey)).resolves.toEqual(
+      [],
+    );
+    await expect(store.recoverSetAside(async () => null)).resolves.toEqual([]);
+
+    expect(setAsideValues(data)).toEqual([blob]);
+    expect(store.getSetAsideCount()).toBe(1);
+  });
+
+  it("recovers a plain value the app's parse now accepts, without a key", async () => {
+    const { storage } = memoryStorage({
+      [UNREADABLE_KEY]: { items: ["plain"] },
+    });
+    const store = itemsStore(storage);
+    const keyFor = vi.fn(async () => null);
+
+    await expect(store.recoverSetAside(keyFor)).resolves.toEqual([["plain"]]);
+
+    expect(keyFor).not.toHaveBeenCalled();
+  });
+
+  it("reads the first version's bare value as one entry without a lock", () => {
+    expect(readSetAsideEntries("bare")).toEqual([
+      { value: "bare", lock: null, setAsideAt: null },
+    ]);
+    expect(readSetAsideEntries(undefined)).toEqual([]);
+    expect(
+      readSetAsideEntries({ setAside: [{ value: 1 }, { nothing: true }, 3] }),
+    ).toEqual([{ value: 1, lock: null, setAsideAt: null }]);
   });
 });
 
@@ -780,6 +905,17 @@ describe("lockData", () => {
     await vi.waitFor(() => expect(good.rewrite).toHaveBeenCalled());
 
     expect(bad.rewrite).toHaveBeenCalled();
+  });
+
+  it("sets aside the parts that can, and erases the rest", async () => {
+    const keeps = { rewrite: vi.fn(), erase: vi.fn(), setAside: vi.fn() };
+    const erases = { rewrite: vi.fn(), erase: vi.fn() };
+
+    await lockData(keeps, erases).setAside(null);
+
+    expect(keeps.setAside).toHaveBeenCalledWith(null);
+    expect(keeps.erase).not.toHaveBeenCalled();
+    expect(erases.erase).toHaveBeenCalled();
   });
 
   it("erases every part", async () => {
