@@ -85,7 +85,8 @@ everything from one barrel for convenience.
   snapshot) and `DataSection` (backup export/import with a confirmation;
   `children` add the app's own rows; with `passwords` — core's backup kit
   methods plus labels — Export asks for a new password and Import asks
-  for a protected file's). Typed structurally against
+  for a protected file's; `onExported` fires once a backup was shared or
+  downloaded, e.g. to remember when the last one was made). Typed structurally against
   `@maat-apps/core`; every string is a `labels` entry from the app.
 - `drawer.tsx` — the Base UI `Drawer` wrapper. With `showSwipeHandle` it
   shows a grab pill and can be swiped down to dismiss; nested drawers stack
