@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 
+import {
+  BackupPasswordDrawer,
+  type BackupPasswords,
+} from "./backup-password-drawer";
 import { Button } from "./button";
 import { ConfirmDrawer } from "./confirm-drawer";
 import {
@@ -32,6 +36,7 @@ export type SharedBackupImportLabels = {
 export function SharedBackupImport<Backup>({
   take,
   parse,
+  passwords,
   onImport,
   labels,
 }: {
@@ -39,6 +44,8 @@ export function SharedBackupImport<Backup>({
   take: () => Promise<string | null>;
   /** Throws for a file that isn't this app's backup. */
   parse: (text: string) => Backup;
+  /** With these, a password-protected file asks for its password. */
+  passwords?: BackupPasswords<Backup>;
   /** Called once the user confirms — an app merges, it doesn't replace. */
   onImport: (backup: Backup) => void;
   labels: SharedBackupImportLabels;
@@ -49,6 +56,8 @@ export function SharedBackupImport<Backup>({
     backup: Backup;
   } | null>(null);
   const [failed, setFailed] = useState(false);
+  // A protected file waiting for its password.
+  const [lockedFile, setLockedFile] = useState<string | null>(null);
 
   useEffect(() => {
     if (!shared) return;
@@ -56,13 +65,29 @@ export function SharedBackupImport<Backup>({
     setSearchParams({}, { replace: true });
     void take().then((text) => {
       if (text === null) return;
+      if (passwords?.isEncrypted(text)) {
+        setLockedFile(text);
+        return;
+      }
       try {
         setPendingImport({ backup: parse(text) });
       } catch {
         setFailed(true);
       }
     });
-  }, [shared, setSearchParams, take, parse]);
+  }, [shared, setSearchParams, take, parse, passwords]);
+
+  async function openLockedFile(password: string): Promise<boolean> {
+    if (!passwords || lockedFile === null) return false;
+    try {
+      const backup = await passwords.parseWithPassword(lockedFile, password);
+      setLockedFile(null);
+      setPendingImport({ backup });
+      return true;
+    } catch {
+      return false;
+    }
+  }
 
   function confirmImport() {
     if (!pendingImport) return;
@@ -81,6 +106,15 @@ export function SharedBackupImport<Backup>({
         confirmLabel={labels.importConfirm}
         onConfirm={confirmImport}
       />
+      {passwords && (
+        <BackupPasswordDrawer
+          mode="enter"
+          open={lockedFile !== null}
+          onOpenChange={(open) => !open && setLockedFile(null)}
+          labels={passwords.labels}
+          onSubmit={openLockedFile}
+        />
+      )}
       <Drawer showSwipeHandle open={failed} onOpenChange={setFailed}>
         <DrawerContent>
           <DrawerHeader className="group-data-[swipe-axis=y]/drawer-popup:text-left">

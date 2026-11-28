@@ -1,14 +1,24 @@
 import {
   type BackupEnvelope,
+  BackupError,
   type BackupMessages,
   type ShareResult,
+  backupFile,
   backupFileName,
   downloadBackup,
   readBackupEnvelope,
   readBackupJson,
   shareBackup,
+  shareOrDownloadFile,
 } from "./backup";
-import { decryptJson, encryptJson, isEncryptedBlob } from "./crypto";
+import {
+  decryptJson,
+  decryptJsonWithPassword,
+  encryptJson,
+  encryptJsonWithPassword,
+  isEncryptedBlob,
+  isPasswordEncryptedBlob,
+} from "./crypto";
 import type { KeyHolder } from "./lock";
 import type { KeyValueStore } from "./storage";
 import { type UpdateSnapshot, createUpdateSnapshot, updateApp } from "./update";
@@ -344,6 +354,24 @@ export type LocalBackupKit<S> = {
   snapshot: UpdateSnapshot<LocalBackup<S>>;
   /** Snapshots, activates the waiting worker, drops the caches, reloads. */
   updateApp(): Promise<void>;
+  /**
+   * The backup (a fresh one by default) as a file only `password` opens —
+   * the envelope stays readable, everything else is encrypted.
+   */
+  encryptedFile(password: string, backup?: LocalBackup<S>): Promise<File>;
+  /** Shares the password-protected backup, else downloads it. */
+  exportWithPassword(
+    password: string,
+    backup?: LocalBackup<S>,
+  ): Promise<"shared" | "cancelled" | "downloaded">;
+  /** True for a password-protected backup file (`parseWithPassword`). */
+  isEncrypted(text: string): boolean;
+  /**
+   * `parse` for a password-protected file (a plain one is parsed as is).
+   * Throws `BackupError` with `messages.wrongPassword` when the password
+   * doesn't open it.
+   */
+  parseWithPassword(text: string, password: string): Promise<LocalBackup<S>>;
   /** For `lockData`: the snapshot is deleted on erase. */
   lockPart: LockDataPart;
 };
@@ -370,12 +398,23 @@ export function createLocalBackup<T, S>({
     };
   }
 
-  function parseValue(value: unknown): LocalBackup<S> {
-    const envelope = readBackupEnvelope(value, {
+  // Binds a file's ciphertext to this app's backups.
+  const encryptedFor = `${app}-backup`;
+
+  function readEnvelope(value: unknown) {
+    return readBackupEnvelope(value, {
       app,
       version: exactVersion ? version : undefined,
       messages,
     });
+  }
+
+  function parseValue(value: unknown): LocalBackup<S> {
+    const envelope = readEnvelope(value);
+    // Without this, its missing `data` would parse as an empty backup.
+    if (envelope.encrypted !== undefined) {
+      throw new BackupError(messages.passwordRequired ?? messages.wrongApp);
+    }
     const data = parseData(envelope.data);
     // Rebuilt and re-serialized, so only what the schemas accepted is kept.
     return {
@@ -402,6 +441,54 @@ export function createLocalBackup<T, S>({
     },
   });
 
+  async function encryptedFile(
+    password: string,
+    backup = create(),
+  ): Promise<File> {
+    return backupFile({
+      app,
+      version,
+      exportedAt: backup.exportedAt,
+      encrypted: await encryptJsonWithPassword(password, backup, {
+        additionalData: encryptedFor,
+      }),
+    });
+  }
+
+  function isEncrypted(text: string): boolean {
+    try {
+      const value: unknown = JSON.parse(text);
+      return (
+        typeof value === "object" &&
+        value !== null &&
+        isPasswordEncryptedBlob((value as { encrypted?: unknown }).encrypted)
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  async function parseWithPassword(
+    text: string,
+    password: string,
+  ): Promise<LocalBackup<S>> {
+    const envelope = readEnvelope(readBackupJson(text, messages));
+    if (!isPasswordEncryptedBlob(envelope.encrypted)) {
+      return parseValue(envelope);
+    }
+    let inner: unknown;
+    try {
+      inner = await decryptJsonWithPassword(
+        password,
+        envelope.encrypted,
+        encryptedFor,
+      );
+    } catch {
+      throw new BackupError(messages.wrongPassword ?? messages.notJson);
+    }
+    return parseValue(inner);
+  }
+
   return {
     create,
     parse: (text) => parseValue(readBackupJson(text, messages)),
@@ -412,6 +499,11 @@ export function createLocalBackup<T, S>({
     share: (backup = create()) => shareBackup(backup),
     snapshot,
     updateApp: () => updateApp(snapshot),
+    encryptedFile,
+    exportWithPassword: async (password, backup) =>
+      shareOrDownloadFile(await encryptedFile(password, backup)),
+    isEncrypted,
+    parseWithPassword,
     lockPart: {
       rewrite: (previousKey = null) => snapshot.reencrypt(previousKey),
       erase: () => snapshot.discard(),

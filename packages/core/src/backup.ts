@@ -21,6 +21,10 @@ export type BackupMessages = {
   wrongApp: string;
   /** Only needed when `readBackupEnvelope` is given a `version`. */
   wrongVersion?: string;
+  /** A password-protected file read without one; `wrongApp` by default. */
+  passwordRequired?: string;
+  /** The password doesn't open the file (or it's damaged); `notJson` by default. */
+  wrongPassword?: string;
 };
 
 /** Parses a backup file's text; throws `BackupError` if it isn't JSON. */
@@ -89,8 +93,12 @@ export function backupFileName(app: string, date = new Date()): string {
   return `${app}-backup-${localDateStamp(date)}.txt`;
 }
 
+/** The fields a backup file is named after; a password-protected one has no `data`. */
+export type BackupFileContent = Pick<BackupEnvelope, "app" | "exportedAt"> &
+  Record<string, unknown>;
+
 /** The backup as a pretty-printed plain-text file named for its export date. */
-export function backupFile(backup: BackupEnvelope): File {
+export function backupFile(backup: BackupFileContent): File {
   return new File(
     [JSON.stringify(backup, null, 2)],
     backupFileName(backup.app, new Date(backup.exportedAt)),

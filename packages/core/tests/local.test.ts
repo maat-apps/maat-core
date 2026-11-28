@@ -405,6 +405,8 @@ describe("createLocalBackup", () => {
     notJson: "not json",
     wrongApp: "wrong app",
     wrongVersion: "wrong version",
+    passwordRequired: "needs a password",
+    wrongPassword: "wrong password",
   };
 
   function kit(store: LocalStore<string[]>, storage: KeyValueStore) {
@@ -609,6 +611,116 @@ describe("createLocalBackup", () => {
     expect(isEncryptedBlob(data.get(SNAPSHOT_KEY))).toBe(false);
     await expect(backups.snapshot.read()).resolves.toMatchObject({
       data: { items: ["a"] },
+    });
+  });
+
+  describe("protected by a password", () => {
+    async function protectedBackup(items = ["secret note"]) {
+      const { storage } = memoryStorage();
+      const store = itemsStore(storage);
+      await store.replace(items);
+      const backups = kit(store, storage);
+      const file = await backups.encryptedFile("correct horse");
+      return { backups, text: await file.text(), file };
+    }
+
+    it("keeps only the envelope readable", async () => {
+      const { text, file } = await protectedBackup();
+
+      const value = JSON.parse(text);
+      expect(value).toMatchObject({
+        app: "test",
+        version: 2,
+        exportedAt: expect.any(String),
+        encrypted: { kdf: "PBKDF2-SHA256" },
+      });
+      expect(value).not.toHaveProperty("data");
+      expect(text).not.toContain("secret note");
+      expect(file.name).toMatch(/^test-backup-\d{4}-\d{2}-\d{2}\.txt$/);
+    });
+
+    it("opens with the password, back to the same backup", async () => {
+      const { backups, text } = await protectedBackup(["a", "b"]);
+
+      const backup = await backups.parseWithPassword(text, "correct horse");
+
+      expect(backup).toMatchObject({
+        app: "test",
+        data: { items: ["a", "b"] },
+      });
+    });
+
+    it("refuses the wrong password", async () => {
+      const { backups, text } = await protectedBackup();
+
+      await expect(backups.parseWithPassword(text, "wrong")).rejects.toThrow(
+        new BackupError("wrong password"),
+      );
+    });
+
+    it("refuses a file encrypted for another app's backups", async () => {
+      const { storage } = memoryStorage();
+      const other = createLocalBackup({
+        app: "other",
+        version: 2,
+        store: itemsStore(storage),
+        messages,
+        snapshot: { storage, key: SNAPSHOT_KEY },
+      });
+      const text = await (await other.encryptedFile("pw")).text();
+      // Relabelled as ours: the ciphertext is still bound to "other".
+      const relabelled = JSON.stringify({ ...JSON.parse(text), app: "test" });
+
+      await expect(
+        kit(itemsStore(storage), storage).parseWithPassword(relabelled, "pw"),
+      ).rejects.toThrow(new BackupError("wrong password"));
+    });
+
+    it("isn't imported as an empty backup without the password", async () => {
+      const { backups, text } = await protectedBackup();
+
+      expect(() => backups.parse(text)).toThrow(
+        new BackupError("needs a password"),
+      );
+    });
+
+    it("is told apart from a plain backup", async () => {
+      const { backups, text } = await protectedBackup();
+
+      expect(backups.isEncrypted(text)).toBe(true);
+      expect(backups.isEncrypted(JSON.stringify(backups.create()))).toBe(false);
+      expect(backups.isEncrypted("{")).toBe(false);
+    });
+
+    it("still reads a plain backup given a password", async () => {
+      const { backups } = await protectedBackup();
+      const plain = JSON.stringify({ app: "test", data: { items: ["old"] } });
+
+      await expect(
+        backups.parseWithPassword(plain, "anything"),
+      ).resolves.toMatchObject({ data: { items: ["old"] } });
+    });
+
+    it("downloads where there's no share sheet", async () => {
+      const { storage } = memoryStorage();
+      const backups = kit(itemsStore(storage), storage);
+      const createObjectURL = vi.fn(() => "blob:x");
+      const link = {
+        click: vi.fn(),
+        remove: vi.fn(),
+      } as unknown as HTMLElement;
+      vi.stubGlobal("URL", { createObjectURL, revokeObjectURL: vi.fn() });
+      vi.stubGlobal("window", { setTimeout: vi.fn() });
+      vi.stubGlobal("document", {
+        createElement: () => link,
+        body: { append: vi.fn() },
+      });
+      vi.stubGlobal("navigator", {});
+
+      await expect(backups.exportWithPassword("pw")).resolves.toBe(
+        "downloaded",
+      );
+      expect(createObjectURL).toHaveBeenCalled();
     });
   });
 

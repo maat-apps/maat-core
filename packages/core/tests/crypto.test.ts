@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
   decryptJson,
+  decryptJsonWithPassword,
   deriveKey,
+  deriveKeyFromPassword,
   encryptJson,
+  encryptJsonWithPassword,
   fromBase64Url,
   isEncryptedBlob,
+  isPasswordEncryptedBlob,
+  PASSWORD_ITERATIONS,
   randomBytes,
   toBase64Url,
 } from "../src/crypto";
@@ -129,6 +134,163 @@ describe("encryptJson / decryptJson", () => {
     };
 
     await expect(decryptJson(key, tampered)).rejects.toThrow();
+  });
+});
+
+describe("encryptJson / decryptJson with additional data", () => {
+  it("decrypts only with the same additional data", async () => {
+    const key = await testKey();
+    const blob = await encryptJson(key, { secret: 1 }, "notes-data");
+
+    await expect(decryptJson(key, blob, "notes-data")).resolves.toEqual({
+      secret: 1,
+    });
+    await expect(decryptJson(key, blob, "notes-snapshot")).rejects.toThrow();
+    await expect(decryptJson(key, blob)).rejects.toThrow();
+  });
+});
+
+// The minimum count the decryption accepts: fast enough for unit tests.
+const FAST = { iterations: 100_000 };
+
+describe("deriveKeyFromPassword", () => {
+  it("derives a usable, non-extractable AES-GCM key", async () => {
+    const key = await deriveKeyFromPassword(
+      "hunter2",
+      randomBytes(16),
+      100_000,
+    );
+
+    expect(key.algorithm.name).toBe("AES-GCM");
+    expect(key.extractable).toBe(false);
+    expect(key.usages).toEqual(["encrypt", "decrypt"]);
+  });
+
+  it("matches a plain WebCrypto PBKDF2 derivation", async () => {
+    const salt = randomBytes(16);
+    const material = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode("hunter2"),
+      "PBKDF2",
+      false,
+      ["deriveKey"],
+    );
+    const reference = await crypto.subtle.deriveKey(
+      { name: "PBKDF2", hash: "SHA-256", salt, iterations: 100_000 },
+      material,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["encrypt"],
+    );
+    const blob = await encryptJson(reference, { secret: 1 });
+
+    const key = await deriveKeyFromPassword("hunter2", salt, 100_000);
+
+    await expect(decryptJson(key, blob)).resolves.toEqual({ secret: 1 });
+  });
+});
+
+describe("encryptJsonWithPassword / decryptJsonWithPassword", () => {
+  it("round-trips a JSON value", async () => {
+    const value = { notes: [{ title: "Zażółć gęślą jaźń" }] };
+    const blob = await encryptJsonWithPassword("correct horse", value, FAST);
+
+    await expect(
+      decryptJsonWithPassword("correct horse", blob),
+    ).resolves.toEqual(value);
+  });
+
+  it("uses a fresh salt and IV on every call", async () => {
+    const first = await encryptJsonWithPassword("pw", { a: 1 }, FAST);
+    const second = await encryptJsonWithPassword("pw", { a: 1 }, FAST);
+
+    expect(first.salt).not.toBe(second.salt);
+    expect(first.iv).not.toBe(second.iv);
+    expect(first.ciphertext).not.toBe(second.ciphertext);
+  });
+
+  it("stores a 16-byte salt, a 12-byte IV and nothing readable", async () => {
+    const blob = await encryptJsonWithPassword("pw", { title: "Secret" }, FAST);
+
+    expect(atob(blob.salt)).toHaveLength(16);
+    expect(atob(blob.iv)).toHaveLength(12);
+    expect(JSON.stringify(blob)).not.toContain("Secret");
+  });
+
+  it("defaults to the full iteration count", async () => {
+    const blob = await encryptJsonWithPassword("pw", 1);
+
+    expect(blob).toMatchObject({
+      kdf: "PBKDF2-SHA256",
+      iterations: PASSWORD_ITERATIONS,
+    });
+  });
+
+  it("fails with the wrong password", async () => {
+    const blob = await encryptJsonWithPassword("right", { a: 1 }, FAST);
+
+    await expect(decryptJsonWithPassword("wrong", blob)).rejects.toThrow();
+  });
+
+  it("fails with other additional data", async () => {
+    const blob = await encryptJsonWithPassword(
+      "pw",
+      { a: 1 },
+      {
+        ...FAST,
+        additionalData: "notes-backup",
+      },
+    );
+
+    await expect(
+      decryptJsonWithPassword("pw", blob, "notes-backup"),
+    ).resolves.toEqual({ a: 1 });
+    await expect(
+      decryptJsonWithPassword("pw", blob, "routines-backup"),
+    ).rejects.toThrow();
+  });
+
+  it("opens with the same password however its letters are encoded", async () => {
+    // "ó" as one code point (NFC) and as "o" + a combining accent (NFD).
+    const blob = await encryptJsonWithPassword(
+      "zo\u0301ł".normalize("NFC"),
+      1,
+      FAST,
+    );
+
+    await expect(
+      decryptJsonWithPassword("zo\u0301ł".normalize("NFD"), blob),
+    ).resolves.toBe(1);
+  });
+
+  it("refuses an empty password", async () => {
+    await expect(encryptJsonWithPassword("", 1, FAST)).rejects.toThrow();
+  });
+
+  it.each([1, 99_999, 10_000_001])(
+    "refuses to run %i iterations from a stored blob",
+    async (iterations) => {
+      const blob = await encryptJsonWithPassword("pw", 1, FAST);
+
+      await expect(
+        decryptJsonWithPassword("pw", { ...blob, iterations }),
+      ).rejects.toThrow("Unsupported");
+    },
+  );
+});
+
+describe("isPasswordEncryptedBlob", () => {
+  it("tells a password blob from a plain encrypted blob", async () => {
+    const blob = await encryptJsonWithPassword("pw", 1, FAST);
+
+    expect(isPasswordEncryptedBlob(blob)).toBe(true);
+    expect(isPasswordEncryptedBlob({ iv: blob.iv, ciphertext: "x" })).toBe(
+      false,
+    );
+    expect(isPasswordEncryptedBlob({ ...blob, iterations: "many" })).toBe(
+      false,
+    );
+    expect(isPasswordEncryptedBlob(null)).toBe(false);
   });
 });
 
